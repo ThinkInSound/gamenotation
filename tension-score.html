@@ -160,12 +160,16 @@ button:disabled { opacity: .45; cursor: default; }
   <header class="masthead">
     <p class="eyebrow">Game analysis theory &middot; live model</p>
     <h1>Tension <em>Score</em></h1>
-    <p class="lede">A small arena game that measures itself while it is played. Each moment is scored like music: progress is the melody and tension is the dynamics, with <code>tension = stakes &times; threat &times; uncertainty</code>. Uncertainty comes from simulating 24 possible futures, which are drawn on the arena as faint trails.</p>
+    <p class="lede">Two small games that measure themselves while they are played, scored with the same notation. Each moment is scored like music: progress is the melody and tension is the dynamics, with <code>tension = stakes &times; threat &times; uncertainty</code>. Uncertainty comes from simulating 24 possible futures. <b>Arena</b> is a dodging game whose enemies arrive in motifs. <b>Zedris</b> is a falling-block game whose pieces are the motifs.</p>
   </header>
 
   <section class="stage" aria-label="Game and live readout">
     <div class="arena-col">
       <div class="toolbar">
+        <div class="seg" role="group" aria-label="Which game">
+          <button id="btn-g-arena" aria-pressed="true">Arena</button>
+          <button id="btn-g-zedris" aria-pressed="false">Zedris</button>
+        </div>
         <div class="seg" role="group" aria-label="Who plays">
           <button id="btn-bot" aria-pressed="true">Watch the bot</button>
           <button id="btn-play" aria-pressed="false">Play yourself</button>
@@ -185,7 +189,7 @@ button:disabled { opacity: .45; cursor: default; }
       </div>
       <div class="arena-wrap"><canvas id="game" tabindex="0" aria-label="Game arena. In play mode, move with WASD or the arrow keys and dash with Space."></canvas></div>
       <div class="toolbar">
-        <label class="check"><input type="checkbox" id="chk-futures" checked> Show simulated futures</label>
+        <label class="check" id="futures-wrap"><input type="checkbox" id="chk-futures" checked> Show simulated futures</label>
         <span class="spacer"></span>
         <button id="btn-rate" class="solo" aria-pressed="false">Rate my tension</button>
         <button id="btn-dash" class="solo" hidden>Dash</button>
@@ -194,7 +198,16 @@ button:disabled { opacity: .45; cursor: default; }
       </div>
       <details class="rules" id="rules" open>
         <summary>Rules</summary>
-        <ul>
+        <ul data-game="zedris" hidden>
+          <li><b>Goal.</b> Pieces fall into a well 9 cells wide and 18 tall. Fill a row completely to clear it. Every 8 cleared rows is a new level, and pieces fall faster each level.</li>
+          <li><b>Pieces.</b> Five shapes: D Duo (2 cells), B Bar (3 in a line), H Hook (3, bent), Z Zed (4, zigzag) and C Cross (5, a plus). The next two pieces are shown on the right.</li>
+          <li><b>Moves.</b> Move left and right, rotate (a piece steps sideways if a wall blocks the turn), drop faster, or hard drop straight to the outline below it. A piece locks shortly after it lands.</li>
+          <li><b>Rising rows.</b> After every 10 pieces, a row with one gap rises from the bottom and pushes the stack up. The counter on the left shows how many pieces until the next one.</li>
+          <li><b>Danger zone.</b> The top three rows are tinted. If a new piece cannot appear, or a rising row pushes blocks off the top, you top out. With checkpoints, every third level is a safe point and topping out returns you to the last one. With permadeath, it returns you to level 1. Either way the well empties.</li>
+          <li><b>Order of pieces.</b> With Structured composition, pieces come in shuffled sets of five with each shape once, so you can learn what is coming. After two sets, a set now and then breaks: one piece is swapped for another. With Random, every piece is drawn independently, so long waits for one shape can happen.</li>
+          <li><b>Controls.</b> Press <b>Play yourself</b>, then use <kbd>&larr;</kbd> <kbd>&rarr;</kbd> or <kbd>A</kbd> <kbd>D</kbd> to move, <kbd>&uarr;</kbd> or <kbd>W</kbd> to rotate, <kbd>&darr;</kbd> or <kbd>S</kbd> to drop faster, and <kbd>Space</kbd> to hard drop. On touch, tap beside the well to move, tap its top half to rotate and its bottom half to hard drop. The bot uses exactly these moves.</li>
+        </ul>
+        <ul data-game="arena">
           <li><b>Goal.</b> Collect the five sparks to open the gate, then step into it. Each gate starts a new zone and clears every enemy.</li>
           <li><b>Hearts.</b> You have five. A hit costs one, knocks you back, removes the enemy that hit you, and leaves you safe for 1 second while you blink. After a gate, a heal (+) may appear if you are hurt; it restores one heart.</li>
           <li><b>Dash.</b> A burst of about three times normal speed for a fifth of a second. Nothing can hit you mid-dash. It recharges in 1.5 seconds, shown by the ring around you. The bot dashes the same way when an enemy gets close.</li>
@@ -227,27 +240,27 @@ button:disabled { opacity: .45; cursor: default; }
         <div class="meter">
           <dt>Stakes</dt><dd id="v-S">0.00</dd>
           <span class="bar"><i id="b-S" style="background: var(--stakes)"></i></span>
-          <p class="def" id="d-S">Progress you would lose by dying now: <span id="lose" class="num-slot">0.0</span> zones.</p>
+          <p class="def" id="d-S">Progress you would lose by dying now: <span id="lose" class="num-slot">0.0</span> <span id="lose-unit">zones</span>.</p>
         </div>
         <div class="meter">
           <dt>Threat</dt><dd id="v-Th">0.00</dd>
           <span class="bar"><i id="b-Th" style="background: var(--threat)"></i></span>
-          <p class="def">Missing hearts, plus how close the enemies are.</p>
+          <p class="def" id="def-Th">Missing hearts, plus how close the enemies are.</p>
         </div>
         <div class="meter">
           <dt>Uncertainty</dt><dd id="v-U">0.00</dd>
           <span class="bar"><i id="b-U" style="background: var(--unc)"></i></span>
-          <p class="def"><span id="hits" class="num-slot">0</span> of 24 simulated futures get hit in the next 3 seconds. Highest at 12 of 24.</p>
+          <p class="def"><span id="hits" class="num-slot">0</span> of 24 simulated futures <span id="u-event">get hit in the next 3 seconds</span>. Highest at 12 of 24.</p>
         </div>
         <div class="meter">
           <dt>Progress</dt><dd id="v-P">0.00</dd>
           <span class="bar"><i id="b-P" style="background: var(--prog)"></i></span>
-          <p class="def">Zone number plus sparks collected. The bar is progress through this zone.</p>
+          <p class="def" id="def-P">Zone number plus sparks collected. The bar is progress through this zone.</p>
         </div>
         <div class="meter">
           <dt>Pattern surprise</dt><dd id="v-X">0.00</dd>
           <span class="bar"><i id="b-X" style="background: var(--ink-2)"></i></span>
-          <p class="def">How unexpected the latest motifs were, judged by a model that learns the motif sequence as you play.</p>
+          <p class="def" id="def-X">How unexpected the latest motifs were, judged by a model that learns the motif sequence as you play.</p>
           <p class="def live" id="voices-now">No motifs playing.</p>
         </div>
         <div class="meter" id="m-you" hidden>
@@ -263,7 +276,7 @@ button:disabled { opacity: .45; cursor: default; }
   <section aria-labelledby="score-h">
     <div class="sec-head">
       <h2 id="score-h">The score</h2>
-      <p>The last 60 seconds. Staff lines are zones, bar lines are gates, and a double bar marks a safe point.</p>
+      <p id="score-note">The last 60 seconds. Staff lines are zones, bar lines are gates, and a double bar marks a safe point.</p>
     </div>
     <div class="legend">
       <span><i style="background: var(--prog)"></i>Progress (melody)</span>
@@ -274,7 +287,7 @@ button:disabled { opacity: .45; cursor: default; }
       <span><i class="bar" style="background: var(--danger)"></i>Fall (death)</span>
       <span><i class="area" style="background: var(--ink-2)"></i>sus. = suspension, res. = resolution</span>
       <span id="lg-you" hidden><i style="background: var(--ink)"></i>You (your rating)</span>
-      <span><i class="area" style="background: var(--ink-2)"></i>Motif voices A&ndash;D: tick height is surprise, &prime; marks a variation, ! a broken pattern</span>
+      <span><i class="area" style="background: var(--ink-2)"></i><span id="lg-motifs">Motif voices A&ndash;D: tick height is surprise, &prime; marks a variation, ! a broken pattern</span></span>
     </div>
     <div class="chart-box"><canvas id="score" aria-label="Scrolling chart of progress and tension over the last 60 seconds"></canvas></div>
   </section>
@@ -286,7 +299,7 @@ button:disabled { opacity: .45; cursor: default; }
     </div>
     <dl class="stats" id="stats">
       <div class="stat"><dt>Time played</dt><dd id="s-time">0:00</dd></div>
-      <div class="stat"><dt>Furthest zone</dt><dd id="s-zone">1</dd></div>
+      <div class="stat"><dt id="s-zone-label">Furthest zone</dt><dd id="s-zone">1</dd></div>
       <div class="stat"><dt>Deaths</dt><dd id="s-deaths">0</dd></div>
       <div class="stat"><dt>Peak tension</dt><dd id="s-peak">0.00</dd></div>
       <div class="stat"><dt>Mean tension</dt><dd id="s-mean">0.00</dd></div>
@@ -313,19 +326,31 @@ button:disabled { opacity: .45; cursor: default; }
   <section class="method" aria-labelledby="method-h">
     <div class="sec-head"><h2 id="method-h">How it is measured</h2></div>
     <div class="grid">
-      <div>
+      <div data-game="arena">
         <h3><i style="background: var(--prog)"></i>Progress, the melody</h3>
         <p><code>P = zone + 0.8 &times; sparks / 5</code>, and entering the gate adds the last 0.2. Zones are the staff lines, so a run reads as a rising line, with a drop at each death.</p>
+      </div>
+      <div data-game="zedris" hidden>
+        <h3><i style="background: var(--prog)"></i>Progress, the melody</h3>
+        <p><code>P = level + rows cleared / 8</code>. Levels are the staff lines. Bar lines mark level-ups, and fainter lines mark each rising row, every 10 pieces: the game's built-in meter.</p>
       </div>
       <div>
         <h3><i style="background: var(--stakes)"></i>Stakes</h3>
         <p>Progress since the last safe point, plus 0.25 for the time a death always costs, scaled as <code>1 &minus; e^(&minus;S/2.5)</code>. With checkpoints it forms a sawtooth. With permadeath it keeps climbing for the whole run.</p>
       </div>
-      <div>
+      <div data-game="arena">
         <h3><i style="background: var(--threat)"></i>Threat</h3>
         <p><code>0.4 &times; missing hearts + 0.6 &times; pressure</code>. Pressure adds up every enemy, weighted by <code>e^(&minus;distance/55)</code>, with half weight for enemies still spawning.</p>
       </div>
-      <div>
+      <div data-game="zedris" hidden>
+        <h3><i style="background: var(--threat)"></i>Threat</h3>
+        <p><code>0.7 &times; (stack height / 18)^1.5 + 0.2 &times; holes / 10 + 0.1 &times; unevenness / 24</code>, capped at 1. A hole is an empty cell with a block above it, and unevenness adds up the height differences between neighbouring columns.</p>
+      </div>
+      <div data-game="zedris" hidden>
+        <h3><i style="background: var(--unc)"></i>Uncertainty</h3>
+        <p>Twice a second, the game copies the well and plays the next 8 pieces forward 24 times: the current piece and the two shown, then pieces from the same randomizer, placed by the bot's method with random variation. A future fails if the stack enters the danger zone or tops out. If <code>p</code> is the share of futures that stay clear, uncertainty is <code>H(p)</code>.</p>
+      </div>
+      <div data-game="arena">
         <h3><i style="background: var(--unc)"></i>Uncertainty</h3>
         <p>About three times a second, the game copies its current state and plays it forward 24 times for 3 seconds, using the bot's movement with random variation. If <code>p</code> is the share of futures that avoid a hit, uncertainty is the binary entropy <code>H(p)</code>. It is 0 when every future agrees and 1 when they split evenly.</p>
       </div>
@@ -337,7 +362,11 @@ button:disabled { opacity: .45; cursor: default; }
         <h3><i style="background: var(--ink-2)"></i>Suspension and resolution</h3>
         <p>A suspension starts when progress has stalled for 2 seconds while threat rose by 0.15 or more and tension is above 0.35. It resolves when progress moves on, breaks on a hit, or fades if tension drops away. The tension cycle is the strongest repeat period in the tension curve, found by autocorrelation.</p>
       </div>
-      <div>
+      <div data-game="zedris" hidden>
+        <h3><i style="background: var(--ink-2)"></i>Pieces as motifs</h3>
+        <p>Each piece is a note in the motifs lane: D Duo, B Bar, H Hook, Z Zed, C Cross. With <b>Structured</b> order, pieces come in shuffled sets of five, so the last piece of a set is fully predictable, and after two sets a set occasionally breaks (marked !). With <b>Random</b> order, pieces are independent. Pattern surprise uses the same learning model as the arena. The bot places each piece with a standard heuristic (aggregate height, lines, holes and unevenness, after Yiyuan Lee&rsquo;s weights) and moves it one step at a time. The motifs-at-once measure becomes <b>open wells</b>: columns at least 3 lower than both neighbours, each a plan the player is keeping open.</p>
+      </div>
+      <div data-game="arena">
         <h3><i style="background: var(--ink-2)"></i>Motifs and pattern surprise</h3>
         <p>Enemies arrive as four motifs: A Pincer, B Crossfire, C Stream and D Ring. A new motif is introduced every two zones, and a motif heard three or more times may return varied (A&prime;). With <b>Structured</b> composition, motifs follow a repeating phrase form that grows as motifs are unlocked: AAAA, then AABA (song form), ABAC, and ABACABAD (rondo). Slots are evenly spaced, the last slot of each phrase layers two motifs like a cadence, and once a form has been heard twice, each slot has a 12% chance of being swapped for an unexpected motif, marked ! on the score. <b>Random</b> composition picks motifs freely. Pattern surprise comes from a model that remembers the last three motifs, learns as you play, and scores <code>&minus;log&#8322; P(motif | recent motifs)</code>, added to a trace that fades over 2.5 seconds.</p>
       </div>
@@ -692,9 +721,230 @@ function expectSurprisal(m, ti) {
   return -Math.log2(p);
 }
 const SURPRISE_DECAY = 2.5, SURPRISE_BITS = 7; // trace decays over 2.5 s; 7 bits fills it
+
+/* ---------- Zedris: an original falling-block game scored with the same notation ---------- */
+const Zedris = (() => {
+  const COLS = 9, ROWS = 18, CELL = 24, BX = Math.round((W - COLS * CELL) / 2), BY = Math.round((H - ROWS * CELL) / 2);
+  const DANGER_ROWS = 3, PHRASE = 10, LINES_PER_LEVEL = 8, BREAK_RATE = 0.12, LOCK_DELAY = 0.35, HORIZON = 8;
+  const LETTERS = ["D", "B", "H", "Z", "C"], NAMES = ["Duo", "Bar", "Hook", "Zed", "Cross"];
+  const BASE = [[[0, 0], [1, 0]], [[0, 0], [1, 0], [2, 0]], [[0, 0], [0, 1], [1, 1]], [[0, 0], [1, 0], [1, 1], [2, 1]], [[1, 0], [0, 1], [1, 1], [2, 1], [1, 2]]];
+  function rotations(cells) {
+    const out = []; let c = cells;
+    for (let r = 0; r < 4; r++) {
+      const mx = Math.min(...c.map(p => p[0])), my = Math.min(...c.map(p => p[1]));
+      const norm = c.map(([x, y]) => [x - mx, y - my]).sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+      const key = JSON.stringify(norm);
+      if (!out.some(o => o.key === key)) out.push({ key, cells: norm, w: Math.max(...norm.map(p => p[0])) + 1, h: Math.max(...norm.map(p => p[1])) + 1 });
+      c = c.map(([x, y]) => [-y, x]);
+    }
+    return out;
+  }
+  const ROT = BASE.map(rotations);
+  const shape = (t, r) => ROT[t][r % ROT[t].length];
+  const gravity = level => Math.min(14, 1.3 * Math.pow(1.17, level)); // rows per second
+  const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  // The board is a flat array, row-major, 0 = empty, 1-5 = piece type + 1, 9 = rising-row block.
+  function collides(b, t, r, x, y) {
+    for (const [cx, cy] of shape(t, r).cells) {
+      const bx = x + cx, by = y + cy;
+      if (bx < 0 || bx >= COLS || by >= ROWS) return true;
+      if (by >= 0 && b[by * COLS + bx]) return true;
+    }
+    return false;
+  }
+  function place(b, t, r, x, y) { for (const [cx, cy] of shape(t, r).cells) { const by = y + cy; if (by >= 0) b[by * COLS + x + cx] = t + 1; } }
+  function clearRows(b) {
+    const cleared = [];
+    for (let y = ROWS - 1; y >= 0; y--) {
+      let full = true; for (let x = 0; x < COLS; x++) if (!b[y * COLS + x]) { full = false; break; }
+      if (full) cleared.push(y);
+    }
+    if (!cleared.length) return cleared;
+    const keep = [];
+    for (let y = 0; y < ROWS; y++) if (cleared.indexOf(y) < 0) keep.push(b.slice(y * COLS, y * COLS + COLS));
+    b.fill(0);
+    let y = ROWS - keep.length;
+    for (const row of keep) { b.set(row, y * COLS); y++; }
+    return cleared;
+  }
+  function features(b) {
+    let agg = 0, holes = 0, bump = 0, maxH = 0, wells = 0, prev = -1;
+    const hs = new Array(COLS);
+    for (let x = 0; x < COLS; x++) {
+      let h = 0;
+      for (let y = 0; y < ROWS; y++) if (b[y * COLS + x]) { h = ROWS - y; break; }
+      hs[x] = h; agg += h; if (h > maxH) maxH = h;
+      for (let y = ROWS - h + 1; y < ROWS; y++) if (!b[y * COLS + x]) holes++;
+      if (prev >= 0) bump += Math.abs(h - prev);
+      prev = h;
+    }
+    for (let x = 0; x < COLS; x++) { const l = x > 0 ? hs[x - 1] : ROWS, rgt = x < COLS - 1 ? hs[x + 1] : ROWS; if (Math.min(l, rgt) - hs[x] >= 3) wells++; }
+    return { agg, holes, bump, maxH, wells };
+  }
+  // Placement heuristic used by the bot and by the simulated futures.
+  function bestPlacement(b, t, noise) {
+    let best = null;
+    const R = ROT[t];
+    for (let r = 0; r < R.length; r++) {
+      const sh = R[r];
+      for (let x = 0; x + sh.w <= COLS; x++) {
+        if (collides(b, t, r, x, 0)) continue;
+        let y = 0; while (!collides(b, t, r, x, y + 1)) y++;
+        const c = b.slice(); place(c, t, r, x, y);
+        const lines = clearRows(c).length, f = features(c);
+        // Weights after Yiyuan Lee's well-known falling-block heuristic: lines, aggregate height, holes, bumpiness.
+        let sc = 0.76 * lines - 0.51 * f.agg - 0.36 * f.holes - 0.18 * f.bump;
+        if (noise) sc += gauss() * noise;
+        if (!best || sc > best.sc) best = { r, x, y, sc };
+      }
+    }
+    return best;
+  }
+  function riseBoard(b, gap) {
+    const over = b.subarray(0, COLS).some(v => v);
+    b.copyWithin(0, COLS);
+    for (let x = 0; x < COLS; x++) b[(ROWS - 1) * COLS + x] = x === gap ? 0 : 9;
+    return over;
+  }
+  function drawPiece(s) {
+    if (s.compose !== "structured") return { t: Math.floor(rand() * 5), violation: false, slot: -1 };
+    if (!s.bag.length) { s.bag = shuffle([0, 1, 2, 3, 4]); s.bagPos = 0; }
+    let t = s.bag.shift(), violation = false;
+    const slot = s.bagPos++;
+    if (s.bagsHeard >= 2 && rand() < BREAK_RATE) { let alt = Math.floor(rand() * 5); if (alt === t) alt = (alt + 1) % 5; t = alt; violation = true; }
+    if (!s.bag.length) s.bagsHeard++;
+    return { t, violation, slot };
+  }
+  const progress = s => s.level + s.lines / LINES_PER_LEVEL;
+  const bankP = s => s.rule === "checkpoint" ? s.bankLevel : 0;
+  function newState(rule, compose) {
+    const s = {
+      t: 0, zt: 0, rule, compose: compose || "structured", board: new Uint8Array(COLS * ROWS), level: 0, lines: 0, bankLevel: 0,
+      deaths: 0, maxLevel: 0, pieces: 0, fallT: 0, lockT: 0, cur: null, next: [], bag: [], bagPos: 0, bagsHeard: 0,
+      seen: [0, 0, 0, 0, 0], id: 0, plan: null, botT: 0, dropped: false
+    };
+    s.next.push(drawPiece(s), drawPiece(s));
+    spawn(s, null);
+    return s;
+  }
+  function spawn(s, ev) {
+    const d = s.next.shift(); s.next.push(drawPiece(s));
+    const sh = shape(d.t, 0);
+    s.cur = { t: d.t, r: 0, x: Math.floor((COLS - sh.w) / 2), y: 0, id: ++s.id };
+    s.plan = null; s.fallT = 0; s.lockT = 0;
+    if (collides(s.board, d.t, 0, s.cur.x, 0)) { topOut(s, ev); return; }
+    const n = ++s.seen[d.t];
+    if (ev) ev.push({ type: "motif", ti: d.t, id: s.cur.id, n, varied: false, together: 1, violation: d.violation, slot: d.slot });
+  }
+  function topOut(s, ev) {
+    const lost = progress(s) - bankP(s);
+    s.deaths++;
+    if (ev && s.cur) ev.push({ type: "motifEnd", id: s.cur.id, ti: s.cur.t });
+    s.level = s.rule === "checkpoint" ? s.bankLevel : 0; s.lines = 0; s.zt = 0; s.board.fill(0);
+    if (ev) ev.push({ type: "death", lost, x: W / 2, y: H / 2 });
+    spawn(s, ev);
+  }
+  function lock(s, ev) {
+    const c = s.cur, before = features(s.board).holes;
+    place(s.board, c.t, c.r, c.x, c.y);
+    if (ev) ev.push({ type: "motifEnd", id: c.id, ti: c.t });
+    const cleared = clearRows(s.board);
+    const after = features(s.board).holes;
+    const cx = BX + (c.x + shape(c.t, c.r).w / 2) * CELL, cy = BY + (c.y + 1) * CELL;
+    if (!cleared.length && after > before && ev) ev.push({ type: "hit", x: cx, y: cy, holes: after - before });
+    if (cleared.length) {
+      s.lines += cleared.length;
+      if (ev) ev.push({ type: "clear", n: cleared.length, x: BX + COLS * CELL / 2, y: BY + cleared[0] * CELL + CELL / 2 });
+      while (s.lines >= LINES_PER_LEVEL) {
+        s.lines -= LINES_PER_LEVEL; s.level++; s.zt = 0; s.maxLevel = Math.max(s.maxLevel, s.level);
+        let banked = false;
+        if (s.rule === "checkpoint" && s.level % 3 === 0) { s.bankLevel = s.level; banked = true; }
+        if (ev) ev.push({ type: "gate", zone: s.level, banked, x: BX + COLS * CELL / 2, y: BY + ROWS * CELL / 2 });
+      }
+    }
+    s.pieces++;
+    if (s.pieces % PHRASE === 0) {
+      const over = riseBoard(s.board, Math.floor(rand() * COLS));
+      if (ev) ev.push({ type: "rise", x: BX + COLS * CELL / 2, y: BY + ROWS * CELL - CELL / 2 });
+      if (over) { topOut(s, ev); return; }
+    }
+    spawn(s, ev);
+  }
+  const ghostY = s => { let y = s.cur.y; while (!collides(s.board, s.cur.t, s.cur.r, s.cur.x, y + 1)) y++; return y; };
+  // inp: { move: -1|0|1, rot, soft, drop }. Returns flags like the arena: 2 = level up, 4 = top-out.
+  function step(s, dt, inp, ev) {
+    let flags = 0;
+    s.t += dt; s.zt += dt;
+    const c = s.cur, lv0 = s.level, d0 = s.deaths;
+    if (inp.rot) {
+      const nr = (c.r + 1) % ROT[c.t].length;
+      for (const k of [0, -1, 1, -2, 2]) if (!collides(s.board, c.t, nr, c.x + k, c.y)) { c.r = nr; c.x += k; break; }
+    }
+    if (inp.move && !collides(s.board, c.t, c.r, c.x + inp.move, c.y)) c.x += inp.move;
+    if (inp.drop) {
+      const gy = ghostY(s);
+      if (ev) ev.push({ type: "drop", rows: gy - c.y });
+      c.y = gy; lock(s, ev);
+    } else {
+      s.fallT += dt * gravity(s.level) * (inp.soft ? 8 : 1);
+      while (s.fallT >= 1) { s.fallT -= 1; if (!collides(s.board, c.t, c.r, c.x, c.y + 1)) c.y++; else { s.fallT = 0; break; } }
+      if (collides(s.board, c.t, c.r, c.x, c.y + 1)) { s.lockT += dt; if (s.lockT >= LOCK_DELAY) lock(s, ev); }
+      else s.lockT = 0;
+    }
+    if (s.level > lv0) flags |= 2;
+    if (s.deaths > d0) flags |= 4;
+    return flags;
+  }
+  // The bot plans a placement when a piece appears, then rotates, shifts and soft-drops one step at a time.
+  function botInput(s, bias, dt) {
+    const c = s.cur;
+    if (!s.plan || s.plan.id !== c.id) { const p = bestPlacement(s.board, c.t, 0.3); s.plan = p ? { id: c.id, r: p.r % ROT[c.t].length, x: p.x } : { id: c.id, r: c.r, x: c.x }; s.botT = 0.25; }
+    s.botT -= dt;
+    if (s.botT > 0) return { move: 0, rot: false, soft: false, drop: false };
+    s.botT = 0.1;
+    if (c.r !== s.plan.r) return { move: 0, rot: true, soft: false, drop: false };
+    if (c.x !== s.plan.x) return { move: c.x < s.plan.x ? 1 : -1, rot: false, soft: false, drop: false };
+    if (!s.plan.ready) { s.plan.ready = true; s.botT = 0.3; return { move: 0, rot: false, soft: false, drop: false }; } // brief pause so the move reads
+    return { move: 0, rot: false, soft: false, drop: true };
+  }
+  // Simulated futures: place the next HORIZON pieces with the heuristic (the preview, then pieces from the same
+  // randomizer). A future fails if the stack enters the danger zone (top 3 rows) or tops out.
+  function rollouts(s) {
+    let ok = 0;
+    for (let i = 0; i < RO_N; i++) {
+      const b = s.board.slice(); let pieces = s.pieces, fail = false, bag = s.bag.slice();
+      const seq = [s.cur.t, s.next[0].t, s.next[1].t];
+      for (let k = 0; k < HORIZON && !fail; k++) {
+        let t;
+        if (k < seq.length) t = seq[k];
+        else if (s.compose === "structured") { if (!bag.length) bag = shuffle([0, 1, 2, 3, 4]); t = bag.shift(); }
+        else t = Math.floor(rand() * 5);
+        const p = bestPlacement(b, t, 0.6);
+        if (!p) { fail = true; break; }
+        place(b, t, p.r, p.x, p.y); clearRows(b); pieces++;
+        if (pieces % PHRASE === 0 && riseBoard(b, Math.floor(rand() * COLS))) { fail = true; break; }
+        if (features(b).maxH > ROWS - DANGER_ROWS) fail = true;
+      }
+      if (!fail) ok++;
+    }
+    return { p: ok / RO_N, paths: [] };
+  }
+  function threatOf(s) {
+    const f = features(s.board);
+    return clamp(0.7 * Math.pow(f.maxH / ROWS, 1.5) + 0.2 * Math.min(1, f.holes / 10) + 0.1 * Math.min(1, f.bump / 24), 0, 1);
+  }
+  const pressure = s => Math.min(1, Math.pow(features(s.board).maxH / ROWS, 1.2));
+  const voicesOf = s => Math.min(4, features(s.board).wells);
+  const stakesN = s => 1 - Math.exp(-(progress(s) - bankP(s) + 0.25) / 2.5);
+  return {
+    COLS, ROWS, CELL, BX, BY, DANGER_ROWS, PHRASE, LINES_PER_LEVEL, LETTERS, NAMES, shape, ghostY, features,
+    newState, step, botInput, rollouts, threatOf, pressure, voicesOf, progress, bankP, stakesN
+  };
+})();
 // CORE-END
 if (typeof window === "undefined") {
-  module.exports = { W, H, newState, step, botInput, rollouts, entropy, threatOf, stakesN, tensionOf, progress, gauss, MOTIFS, MOTIF_NAMES, voicesOf, newExpect, expectSurprisal, SURPRISE_DECAY, SURPRISE_BITS, FORMS, FORM_NAMES, motifsUnlocked };
+  module.exports = { W, H, newState, step, botInput, rollouts, entropy, threatOf, stakesN, tensionOf, progress, gauss, MOTIFS, MOTIF_NAMES, voicesOf, newExpect, expectSurprisal, SURPRISE_DECAY, SURPRISE_BITS, FORMS, FORM_NAMES, motifsUnlocked, Zedris };
   return;
 }
 
@@ -705,17 +955,18 @@ const gameCanvas = $("game"), scoreCanvas = $("score"), overCanvas = $("overview
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let mode = "bot", speed = 1, rule = "checkpoint", showFutures = true, compose = "structured";
+let game = "arena", G = null; // G is the adapter for the game being played (ArenaGame or ZedrisGame, defined below)
 let s, hist, markers, susp, suspList, U_est, U_disp, hitsLast, paths, lastRoll, lastSample, wander, flashes, particles, rings, started, peakT, sumT, pRaw, pS, I4, youCache, xTrace, expectM, motifLog;
 
 function resetSession() {
-  s = newState(rule, compose);
+  s = G.newState(rule, compose);
   hist = { t: [], P: [], S: [], Th: [], U: [], T: [], pS: [], ES: [], SU: [], I4: [], X: [], V: [], R: [] };
   pRaw = 1; pS = 1; I4 = 0; youCache = null; xTrace = 0; expectM = newExpect(); motifLog = [];
   markers = []; suspList = []; susp = null;
   U_est = 0; U_disp = 0; hitsLast = 0; paths = []; lastRoll = -1; lastSample = -1;
   wander = 0; flashes = []; particles = []; rings = []; started = mode === "bot"; peakT = 0; sumT = 0;
   taught = new Set();
-  flash(mode === "bot" ? "Zone 1" : "Zone 1: collect the sparks", 2.2);
+  flash(G.startText(mode), 2.2);
   cycleCache = null;
 }
 
@@ -738,6 +989,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors
 
 /* Input */
 const keys = new Set();
+const pressQueue = [], tapQueue = []; // key presses and taps since the last tick (used by Zedris)
 let dashQueued = false;
 const pointer = { active: false, x: 0, y: 0, id: null };
 const GAME_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight"]);
@@ -750,6 +1002,7 @@ window.addEventListener("keydown", e => {
   }
   if (mode !== "play" || !GAME_KEYS.has(e.code) || !keyTargetOk()) return;
   e.preventDefault();
+  if (!e.repeat) pressQueue.push(e.code);
   if (e.code === "Space" || e.code.indexOf("Shift") === 0) { if (!e.repeat) dashQueued = true; }
   else keys.add(e.code);
 });
@@ -759,6 +1012,7 @@ function toWorld(e) { const r = gameCanvas.getBoundingClientRect(); return { x: 
 gameCanvas.addEventListener("pointerdown", e => {
   if (mode !== "play") return;
   gameCanvas.focus({ preventScroll: true });
+  tapQueue.push(toWorld(e));
   if (e.pointerType !== "mouse" && pointer.active && pointer.id !== e.pointerId) { dashQueued = true; return; }
   pointer.active = true; pointer.id = e.pointerId; Object.assign(pointer, toWorld(e));
   try { gameCanvas.setPointerCapture(e.pointerId); } catch (_) {}
@@ -778,6 +1032,31 @@ function playerInput() {
   if (m > 0) { mx /= m; my /= m; started = true; }
   const dash = dashQueued; dashQueued = false;
   return { mx, my, dash };
+}
+// Zedris controls: a press moves or rotates once; holding left or right repeats after a short delay.
+const zHold = { dir: 0, t: 0 };
+function zedrisInput(dt) {
+  let move = 0, rot = false, drop = false;
+  for (const code of pressQueue) {
+    if (code === "ArrowLeft" || code === "KeyA") { move = -1; zHold.dir = -1; zHold.t = 0.17; }
+    else if (code === "ArrowRight" || code === "KeyD") { move = 1; zHold.dir = 1; zHold.t = 0.17; }
+    else if (code === "ArrowUp" || code === "KeyW") rot = true;
+    else if (code === "Space") drop = true;
+  }
+  const Z = Zedris;
+  for (const tp of tapQueue) {
+    if (tp.x < Z.BX) move = -1;
+    else if (tp.x > Z.BX + Z.COLS * Z.CELL) move = 1;
+    else if (tp.y < Z.BY + Z.ROWS * Z.CELL / 2) rot = true;
+    else drop = true;
+  }
+  if (dashQueued) { drop = true; dashQueued = false; }
+  const held = (keys.has("ArrowLeft") || keys.has("KeyA")) ? -1 : (keys.has("ArrowRight") || keys.has("KeyD")) ? 1 : 0;
+  if (held && held === zHold.dir && !move) { zHold.t -= dt; if (zHold.t <= 0) { move = held; zHold.t = 0.05; } }
+  else if (!held) zHold.dir = 0;
+  const soft = keys.has("ArrowDown") || keys.has("KeyS");
+  if (move || rot || drop || soft) started = true;
+  return { move, rot, soft, drop };
 }
 
 /* Sound: progress picks the scale degree of a drone, tension adds a detuned voice and a tritone */
@@ -823,9 +1102,12 @@ function blip(freq, when, dur, type, vol) {
 }
 function soundEvent(ev) {
   if (!audio.on) return;
-  const f = degFreq(progress(s));
-  if (ev.type === "spark") blip(f * 4 * Math.pow(2, PENTA[s.collected % 5] / 12), 0, 0.25, "sine", 0.1);
-  else if (ev.type === "gate") { const g = degFreq(s.zone); [1, 1.25, 1.5, 2].forEach((m, i) => blip(g * 2 * m, i * 0.07, 0.6, "triangle", 0.09)); }
+  const f = degFreq(G.progress(s));
+  if (ev.type === "spark") blip(f * 4 * Math.pow(2, PENTA[(s.collected || 0) % 5] / 12), 0, 0.25, "sine", 0.1);
+  else if (ev.type === "clear") [0, 2, 4, 7].slice(0, ev.n).forEach((st, i) => blip(f * 4 * Math.pow(2, st / 12), i * 0.05, 0.3, "sine", 0.09));
+  else if (ev.type === "drop") blip(f * 1.5, 0, 0.1, "triangle", 0.05);
+  else if (ev.type === "rise") { blip(70, 0, 0.3, "sine", 0.12); blip(105, 0.05, 0.25, "triangle", 0.05); }
+  else if (ev.type === "gate") { const g = degFreq(ev.zone); [1, 1.25, 1.5, 2].forEach((m, i) => blip(g * 2 * m, i * 0.07, 0.6, "triangle", 0.09)); }
   else if (ev.type === "hit") { blip(90, 0, 0.18, "square", 0.08); blip(62, 0.02, 0.25, "sine", 0.14); }
   else if (ev.type === "death") [1, 0.84, 0.71, 0.5].forEach((m, i) => blip(f * 2 * m, i * 0.12, 0.5, "sawtooth", 0.05));
   else if (ev.type === "heal") blip(f * 3, 0, 0.3, "sine", 0.08);
@@ -844,30 +1126,34 @@ function burst(x, y, color, n, spd) {
 function handleEvent(ev) {
   soundEvent(ev);
   const t = s.t;
+  const fc = G.focus(s);
   if (ev.type === "spark") burst(ev.x, ev.y, "prog", 12, 120);
-  else if (ev.type === "dash") teach("dash", "Dash: a short burst of speed. Nothing can hit a dashing player.");
+  else if (ev.type === "clear") { burst(ev.x, ev.y, "prog", 10 + 6 * ev.n, 160); teach("clear", G.teach.clear); }
+  else if (ev.type === "dash") teach("dash", G.teach.dash);
+  else if (ev.type === "drop") teach("drop", G.teach.drop);
+  else if (ev.type === "rise") { markers.push({ t, type: "rise" }); rings.push({ x: ev.x, y: ev.y, r: 6, grow: 260, life: 0.4, max: 0.4, color: "ink-2" }); teach("rise", G.teach.rise); }
   else if (ev.type === "gateOpen") flash("Gate open", 1.4, "prog");
   else if (ev.type === "gate") {
     markers.push({ t, type: ev.banked ? "bank" : "bar", zone: ev.zone });
-    rings.push({ x: s.pl.x, y: s.pl.y, r: 10, grow: 900, life: 0.6, max: 0.6, color: "prog" });
-    flash(ev.banked ? `Zone ${ev.zone + 1}: safe point, progress banked` : `Zone ${ev.zone + 1}`, 2, "prog");
+    rings.push({ x: ev.x != null ? ev.x : fc.x, y: ev.y != null ? ev.y : fc.y, r: 10, grow: 900, life: 0.6, max: 0.6, color: "prog" });
+    flash(ev.banked ? `${G.Unit} ${ev.zone + 1}: safe point, progress banked` : `${G.Unit} ${ev.zone + 1}`, 2, "prog");
   } else if (ev.type === "hit") {
     markers.push({ t, type: "hit" });
     burst(ev.x, ev.y, "danger", 10, 160);
-    rings.push({ x: s.pl.x, y: s.pl.y, r: 8, grow: 220, life: 0.35, max: 0.35, color: "danger" });
-    teach("hit", "Hit: one heart lost, knocked back, safe for 1 s while blinking.");
+    rings.push({ x: game === "arena" ? fc.x : ev.x, y: game === "arena" ? fc.y : ev.y, r: 8, grow: 220, life: 0.35, max: 0.35, color: "danger" });
+    teach("hit", G.teach.hit);
     if (susp) endSusp("broken");
   } else if (ev.type === "death") {
     markers.push({ t, type: "death", lost: ev.lost });
-    flash(rule === "checkpoint" ? `Fell back to zone ${s.zone + 1}, lost ${ev.lost.toFixed(1)}` : `Run over, lost ${ev.lost.toFixed(1)}. Back to zone 1`, 2.6, "danger");
-  } else if (ev.type === "heal") { burst(ev.x, ev.y, "stakes", 8, 90); teach("heal", "Heal: one heart restored."); }
+    flash(rule === "checkpoint" ? `Fell back to ${G.unit} ${G.unitNow(s) + 1}, lost ${ev.lost.toFixed(1)}` : `Run over, lost ${ev.lost.toFixed(1)}. Back to ${G.unit} 1`, 2.6, "danger");
+  } else if (ev.type === "heal") { burst(ev.x, ev.y, "stakes", 8, 90); teach("heal", G.teach.heal); }
   else if (ev.type === "motif") {
     const bits = expectSurprisal(expectM, ev.ti);
     xTrace = Math.min(1, xTrace + bits / SURPRISE_BITS);
     motifLog.push({ t, t1: null, ti: ev.ti, id: ev.id, n: ev.n, varied: ev.varied, together: ev.together, bits, violation: ev.violation, slot: ev.slot });
-    if (ev.n === 1) flash(`New motif: ${MOTIFS[ev.ti]} ${MOTIF_NAMES[ev.ti]}`, 2.4, "ink");
+    if (ev.n === 1) flash(`${G.newMotifWord}: ${G.MOTIFS[ev.ti]} ${G.MOTIF_NAMES[ev.ti]}`, 2.4, "ink");
     // each motif sounds its own note; louder when it is more surprising
-    if (audio.on) blip(degFreq(progress(s)) * [2, 2.5, 3, 3.75][ev.ti], 0, 0.2, "sine", 0.03 + 0.07 * Math.min(1, bits / SURPRISE_BITS));
+    if (audio.on) blip(degFreq(G.progress(s)) * [2, 2.25, 2.5, 3, 3.75][ev.ti], 0, 0.2, "sine", 0.03 + 0.07 * Math.min(1, bits / SURPRISE_BITS));
   } else if (ev.type === "motifEnd") {
     for (let i = motifLog.length - 1; i >= 0; i--) if (motifLog[i].id === ev.id) { motifLog[i].t1 = t; break; }
   }
@@ -884,7 +1170,7 @@ function sample() {
   const es = cur.Sn * 2 * Math.sqrt(pS * (1 - pS));
   const su = n0 >= 10 ? clamp(cur.Sn * Math.abs(pS - h.pS[n0 - 10]) * 2, 0, 1) : 0;
   h.t.push(s.t); h.P.push(cur.P); h.S.push(cur.Sn); h.Th.push(cur.Th); h.U.push(cur.U); h.T.push(cur.T);
-  h.pS.push(pS); h.ES.push(es); h.SU.push(su); h.I4.push(I4); h.X.push(xTrace); h.V.push(voicesOf(s)); h.R.push(rating.on ? rating.v : NaN);
+  h.pS.push(pS); h.ES.push(es); h.SU.push(su); h.I4.push(I4); h.X.push(xTrace); h.V.push(G.voicesOf(s)); h.R.push(rating.on ? rating.v : NaN);
   sumT += cur.T; if (cur.T > peakT) peakT = cur.T;
   if (h.t.length > 36000) {
     for (const k in h) h[k].splice(0, 6000);
@@ -906,23 +1192,22 @@ function tick(dt) {
   let inp;
   if (mode === "bot") {
     wander += -wander * 1.5 * dt + gauss() * 0.9 * Math.sqrt(dt);
-    inp = botInput(s, wander);
-  } else inp = started ? playerInput() : (playerInput(), { mx: 0, my: 0, dash: false });
+    inp = G.botInput(s, wander, dt);
+  } else { const pin = G.playerInput(dt); inp = started ? pin : G.idle; }
+  pressQueue.length = 0; tapQueue.length = 0;
   if (mode === "play" && !started) return;
   const ev = [];
-  step(s, dt, inp, ev);
+  G.step(s, dt, inp, ev);
   for (const e of ev) { handleEvent(e); if (e.type === "hit") I4 = Math.min(1, I4 + 0.25); }
-  if (lastRoll < 0 || s.t - lastRoll >= RO_EVERY) {
-    const r = rollouts(s, showFutures);
+  if (lastRoll < 0 || s.t - lastRoll >= G.RO_EVERY) {
+    const r = G.rollouts(s, showFutures && G.trails);
     U_est = entropy(r.p); hitsLast = Math.round((1 - r.p) * 24); paths = r.paths || []; lastRoll = s.t; pRaw = r.p;
   }
   U_disp += (U_est - U_disp) * Math.min(1, dt / 0.25);
   pS += (pRaw - pS) * Math.min(1, dt / 0.25);
-  let nearRaw = 0;
-  for (const en of s.en) nearRaw += Math.exp(-Math.max(0, Math.hypot(s.pl.x - en.x, s.pl.y - en.y) - 17) / 55);
-  I4 = clamp(I4 + (0.25 * (1 - Math.exp(-nearRaw / 1.2)) - 0.35 * I4) * dt, 0, 1);
+  I4 = clamp(I4 + (0.25 * G.pressure(s) - 0.35 * I4) * dt, 0, 1);
   xTrace *= Math.exp(-dt / SURPRISE_DECAY);
-  cur.P = progress(s); cur.Sn = stakesN(s); cur.Th = threatOf(s); cur.U = U_disp; cur.T = tensionOf(cur.Sn, cur.Th, cur.U);
+  cur.P = G.progress(s); cur.Sn = G.stakesN(s); cur.Th = G.threatOf(s); cur.U = U_disp; cur.T = tensionOf(cur.Sn, cur.Th, cur.U);
   if (lastSample < 0 || s.t - lastSample >= SAMPLE_EVERY) { lastSample = s.t; sample(); }
   for (let i = particles.length - 1; i >= 0; i--) { const q = particles[i]; q.life -= dt; if (q.life <= 0) { particles.splice(i, 1); continue; } q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.92; q.vy *= 0.92; }
   for (let i = rings.length - 1; i >= 0; i--) { const q = rings[i]; q.life -= dt; q.r += q.grow * dt; if (q.life <= 0) rings.splice(i, 1); }
@@ -950,6 +1235,12 @@ function drawGame() {
   const { ctx, w, dpr } = f, sc = w / W;
   ctx.setTransform(dpr * sc, 0, 0, dpr * sc, 0, 0);
   const t = s.t;
+  G.draw(ctx, t);
+  for (const q of rings) { ctx.strokeStyle = alpha(C[q.color], Math.max(0, q.life / q.max) * 0.8); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 6.283); ctx.stroke(); }
+  for (const q of particles) { ctx.fillStyle = alpha(C[q.color], Math.max(0, q.life / q.max)); ctx.beginPath(); ctx.arc(q.x, q.y, 2.2, 0, 6.283); ctx.fill(); }
+  drawOverlay(ctx, t);
+}
+function drawArena(ctx, t) {
   ctx.fillStyle = C.arena; ctx.fillRect(0, 0, W, H);
   ctx.strokeStyle = C["arena-grid"]; ctx.lineWidth = 1;
   ctx.beginPath();
@@ -1019,8 +1310,6 @@ function drawGame() {
   ctx.strokeStyle = C.arena; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, PR - 3.5, 0, 6.283); ctx.stroke();
   ctx.globalAlpha = 1;
   if (p.dashCd > 0) { ctx.strokeStyle = alpha(C.ink, 0.4); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, PR + 5, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - p.dashCd / DASH_CD)); ctx.stroke(); }
-  for (const q of rings) { ctx.strokeStyle = alpha(C[q.color], Math.max(0, q.life / q.max) * 0.8); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 6.283); ctx.stroke(); }
-  for (const q of particles) { ctx.fillStyle = alpha(C[q.color], Math.max(0, q.life / q.max)); ctx.beginPath(); ctx.arc(q.x, q.y, 2.2, 0, 6.283); ctx.fill(); }
 
   // HUD
   ctx.font = `600 15px ${FONT_BODY}`; ctx.textBaseline = "top"; ctx.textAlign = "left"; ctx.fillStyle = C.ink;
@@ -1035,9 +1324,11 @@ function drawGame() {
   ctx.textAlign = "right";
   ctx.fillText(mode === "bot" ? `BOT PLAYING ${speed}×` : "YOU ARE PLAYING", W - 14, 14);
   ctx.fillText(rule === "checkpoint" ? `SAFE POINT: ZONE ${bankP(s) + 1}` : "PERMADEATH", W - 14, 30);
+}
+function drawOverlay(ctx, t) {
   const live = flashes.filter(fl => fl.until > t);
-  ctx.textAlign = "center";
-  let fy = 16;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  let fy = G.flashY;
   live.forEach(fl => {
     const a = Math.min(1, (fl.until - t) / 0.4);
     ctx.font = fl.small ? `500 15px ${FONT_BODY}` : `italic 26px ${FONT_DISPLAY}`;
@@ -1054,10 +1345,51 @@ function drawGame() {
     ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.stroke();
     ctx.fillStyle = C.ink; ctx.font = `italic 28px ${FONT_DISPLAY}`; ctx.fillText("Your turn", W / 2, H / 2 - 48);
     ctx.font = `400 13px ${FONT_BODY}`; ctx.fillStyle = C["ink-2"];
-    ctx.fillText("Collect 5 sparks, then step into the gate.", W / 2, H / 2 - 10);
-    ctx.fillText("WASD or arrows to move, Space to dash.", W / 2, H / 2 + 10);
-    ctx.fillText("On touch: hold a finger where you want to go.", W / 2, H / 2 + 30);
+    G.intro.forEach((line, i) => ctx.fillText(line, W / 2, H / 2 - 10 + i * 20));
   }
+}
+// Zedris: the well in the middle, level and rising-row counter on the left, the next two pieces on the right.
+function drawZedris(ctx, t) {
+  const Z = Zedris, CE = Z.CELL, x0 = Z.BX, y0 = Z.BY, ww = Z.COLS * CE, hh = Z.ROWS * CE, b = s.board, c = s.cur;
+  ctx.fillStyle = C.arena; ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = alpha(C.ink, 0.035); ctx.fillRect(x0, y0, ww, hh);
+  ctx.fillStyle = alpha(C.danger, 0.09); ctx.fillRect(x0, y0, ww, Z.DANGER_ROWS * CE);
+  ctx.strokeStyle = C["arena-grid"]; ctx.lineWidth = 1; ctx.beginPath();
+  for (let x = 1; x < Z.COLS; x++) { ctx.moveTo(x0 + x * CE + 0.5, y0); ctx.lineTo(x0 + x * CE + 0.5, y0 + hh); }
+  for (let y = 1; y < Z.ROWS; y++) { ctx.moveTo(x0, y0 + y * CE + 0.5); ctx.lineTo(x0 + ww, y0 + y * CE + 0.5); }
+  ctx.stroke();
+  ctx.strokeStyle = rule === "checkpoint" && s.level > 0 && s.level === s.bankLevel ? alpha(C.prog, 0.7) : C.rule;
+  ctx.lineWidth = 2; ctx.strokeRect(x0 - 1, y0 - 1, ww + 2, hh + 2);
+  const cell = (x, y, fill) => { ctx.fillStyle = fill; roundRect(ctx, x0 + x * CE + 1.5, y0 + y * CE + 1.5, CE - 3, CE - 3, 3); ctx.fill(); };
+  for (let y = 0; y < Z.ROWS; y++) for (let x = 0; x < Z.COLS; x++) {
+    const v = b[y * Z.COLS + x];
+    if (v) cell(x, y, v === 9 ? alpha(C["ink-2"], 0.32) : alpha(C["ink-2"], 0.5 + 0.1 * (v % 3)));
+  }
+  const sh = Z.shape(c.t, c.r), gy = Z.ghostY(s);
+  ctx.strokeStyle = alpha(C.ink, 0.4); ctx.lineWidth = 1.5;
+  for (const [cx, cy] of sh.cells) { roundRect(ctx, x0 + (c.x + cx) * CE + 2.5, y0 + (gy + cy) * CE + 2.5, CE - 5, CE - 5, 3); ctx.stroke(); }
+  for (const [cx, cy] of sh.cells) if (c.y + cy >= 0) cell(c.x + cx, c.y + cy, C.ink);
+  ctx.textBaseline = "top"; ctx.textAlign = "left";
+  ctx.font = `500 10px ${FONT_MONO}`; ctx.fillStyle = C.danger; ctx.fillText("DANGER", x0 + ww + 10, y0 + 6);
+  // left panel
+  const lx = 28;
+  ctx.font = `600 15px ${FONT_BODY}`; ctx.fillStyle = C.ink; ctx.fillText(`Level ${s.level + 1}`, lx, 26);
+  ctx.font = `500 12px ${FONT_MONO}`; ctx.fillStyle = C["ink-2"];
+  ctx.fillText(`${s.lines} of ${Z.LINES_PER_LEVEL} rows`, lx, 50);
+  const toRise = Z.PHRASE - (s.pieces % Z.PHRASE);
+  ctx.fillText(`Rising row in ${toRise}`, lx, 70);
+  for (let i = 0; i < Z.PHRASE; i++) { ctx.fillStyle = i < Z.PHRASE - toRise ? C["ink-2"] : alpha(C["ink-2"], 0.25); ctx.fillRect(lx + i * 14, 90, 10, 6); }
+  ctx.fillStyle = C["ink-2"];
+  ctx.fillText(rule === "checkpoint" ? `Safe point: level ${Z.bankP(s) + 1}` : "Permadeath", lx, 112);
+  ctx.fillText(mode === "bot" ? `BOT PLAYING ${speed}×` : "YOU ARE PLAYING", lx, H - 36);
+  // right panel: next pieces
+  const rx = x0 + ww + 28;
+  ctx.font = `500 12px ${FONT_MONO}`; ctx.fillStyle = C["ink-2"]; ctx.fillText("NEXT", rx, 40);
+  s.next.forEach((d, i) => {
+    const ps = Z.shape(d.t, 0), sz = 16, oy = 62 + i * 92;
+    for (const [cx, cy] of ps.cells) { ctx.fillStyle = i === 0 ? alpha(C.ink, 0.85) : alpha(C.ink, 0.5); roundRect(ctx, rx + cx * sz, oy + cy * sz, sz - 2, sz - 2, 2); ctx.fill(); }
+    ctx.fillStyle = C["ink-2"]; ctx.font = `500 11px ${FONT_MONO}`; ctx.fillText(`${Z.LETTERS[d.t]} ${Z.NAMES[d.t]}`, rx, oy + ps.h * sz + 6);
+  });
 }
 
 function idxAt(arr, t) { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < t) lo = m + 1; else hi = m; } return lo; }
@@ -1070,7 +1402,7 @@ function drawScore() {
   const padL = 44, padR = 14, t1 = Math.max(win, s.t), t0 = t1 - win;
   const X = t => padL + (t - t0) / win * (w - padL - padR);
   const top = { y0: 18, y1: Math.round(h * 0.30) }, vl = { y0: Math.round(h * 0.36), y1: Math.round(h * 0.53) }, bot = { y0: Math.round(h * 0.60), y1: h - 24 };
-  const rh = (vl.y1 - vl.y0) / 4;
+  const NM = G.MOTIFS.length, rh = (vl.y1 - vl.y0) / NM;
   const H_ = hist, i0 = Math.max(0, idxAt(H_.t, t0) - 1), n = H_.t.length;
   let minP = Infinity, maxP = -Infinity;
   for (let i = i0; i < n; i++) { minP = Math.min(minP, H_.P[i]); maxP = Math.max(maxP, H_.P[i]); }
@@ -1082,7 +1414,7 @@ function drawScore() {
   ctx.font = `500 10px ${FONT_MONO}`; ctx.textBaseline = "middle";
   // staff lines = zones
   ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.fillStyle = C["ink-2"]; ctx.textAlign = "right";
-  for (let z = lo; z <= hi; z++) { const y = Math.round(YP(z)) + 0.5; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(`Z${z + 1}`, padL - 8, y); }
+  for (let z = lo; z <= hi; z++) { const y = Math.round(YP(z)) + 0.5; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(`${G.zoneLetter}${z + 1}`, padL - 8, y); }
   // tension lane guides
   [0, 0.5, 1].forEach(v => { const y = Math.round(YT(v)) + 0.5; ctx.strokeStyle = alpha(C.rule, v === 0 ? 1 : 0.6); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(v.toFixed(1), padL - 8, y); });
   ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
@@ -1090,12 +1422,12 @@ function drawScore() {
 
   // motif voices, like a piano roll: one row per motif, a bar while it plays, a tick at its start as tall as its surprise
   ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  for (let r = 0; r < 4; r++) {
-    ctx.fillStyle = C["ink-2"]; ctx.fillText(MOTIFS[r], padL - 8, vl.y0 + rh * (r + 0.5));
+  for (let r = 0; r < NM; r++) {
+    ctx.fillStyle = C["ink-2"]; ctx.fillText(G.MOTIFS[r], padL - 8, vl.y0 + rh * (r + 0.5));
     const y = Math.round(vl.y0 + rh * (r + 1)) + 0.5;
     ctx.strokeStyle = alpha(C.rule, 0.6); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
   }
-  const lastLbl = [-1e9, -1e9, -1e9, -1e9];
+  const lastLbl = new Array(NM).fill(-1e9);
   ctx.textAlign = "left";
   for (const m of motifLog) {
     const te = m.t1 == null ? s.t : m.t1;
@@ -1107,7 +1439,7 @@ function drawScore() {
       ctx.fillStyle = C.ink; ctx.fillRect(X(m.t) - 1, y + bh - tk, 2, tk);
       if (X(m.t) - lastLbl[m.ti] > 30 && bh >= 9) {
         ctx.fillStyle = C.ink; ctx.font = `500 ${Math.min(11, bh)}px ${FONT_MONO}`;
-        ctx.fillText(MOTIFS[m.ti] + (m.varied ? "′" : "") + (m.violation ? "!" : "") + (m.n === 1 ? " new" : ""), X(m.t) + 4, y + bh / 2);
+        ctx.fillText(G.MOTIFS[m.ti] + (m.varied ? "′" : "") + (m.violation ? "!" : "") + (m.n === 1 ? " new" : ""), X(m.t) + 4, y + bh / 2);
         lastLbl[m.ti] = X(m.t);
       }
     }
@@ -1143,6 +1475,9 @@ function drawScore() {
     } else if (m.type === "hit") {
       ctx.strokeStyle = C.danger; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(x, bot.y1); ctx.lineTo(x, bot.y1 + 7); ctx.stroke();
+    } else if (m.type === "rise") { // Zedris rising rows: the meter
+      ctx.strokeStyle = alpha(C.ink, 0.2); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, top.y0); ctx.lineTo(x, bot.y1); ctx.stroke();
     }
   }
   if (n > 1) {
@@ -1192,7 +1527,7 @@ function drawOverview() {
   const YP = v => y1 - v / Math.ceil(maxP + 0.2) * (y1 - y0), YT = v => y1 - v * (y1 - y0);
   ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padL, y1 + 0.5); ctx.lineTo(w - padR, y1 + 0.5); ctx.stroke();
   ctx.font = `500 10px ${FONT_MONO}`; ctx.fillStyle = C["ink-2"]; ctx.textAlign = "right"; ctx.textBaseline = "middle";
-  ctx.fillText(`Z${Math.ceil(maxP + 0.2) + 1}`, padL - 8, y0); ctx.fillText("Z1", padL - 8, y1);
+  ctx.fillText(`${G.zoneLetter}${Math.ceil(maxP + 0.2) + 1}`, padL - 8, y0); ctx.fillText(`${G.zoneLetter}1`, padL - 8, y1);
   if (n > 1) {
     const step = Math.max(1, Math.floor(n / (w * 1.5)));
     ctx.beginPath(); ctx.moveTo(X(H_.t[0]), YT(0));
@@ -1246,22 +1581,17 @@ function updateUi(now) {
     set("T", cur.T.toFixed(2), cur.T); set("S", cur.Sn.toFixed(2), cur.Sn); set("Th", cur.Th.toFixed(2), cur.Th); set("U", cur.U.toFixed(2), cur.U);
     set("P", cur.P.toFixed(2), cur.P - Math.floor(cur.P));
     set("X", xTrace.toFixed(2), xTrace);
-    const act = []; for (const a of s.pat.active) if (act.indexOf(a.ti) < 0) act.push(a.ti);
-    act.sort();
-    $("voices-now").textContent = (act.length ? `Playing: ${act.map(ti => `${MOTIFS[ti]} ${MOTIF_NAMES[ti]}`).join(", ")}.` : "No motifs playing.") +
-      (s.pat.compose === "structured" ? ` Form ${FORM_NAMES[s.pat.un - 1]}.` : " Random order.");
-    $("lose").textContent = Math.max(0, cur.P - bankP(s)).toFixed(1);
+    $("voices-now").textContent = G.voicesText(s);
+    $("lose").textContent = Math.max(0, cur.P - G.bankP(s)).toFixed(1);
     $("hits").textContent = hitsLast;
     const d = DYN.find(x => cur.T < x[0]);
     if ($("dyn").textContent !== d[1]) { $("dyn").textContent = d[1]; $("dyn-word").textContent = d[2]; }
-    const nextBank = (Math.floor(s.zone / 3) + 1) * 3;
-    $("status").innerHTML = `<b>Zone ${s.zone + 1}</b> &middot; ${s.pl.hp} of ${MAXHP} hearts &middot; ${s.collected} of ${K} sparks &middot; ` +
-      (rule === "checkpoint" ? `next safe point at zone ${nextBank + 1}` : `permadeath, the whole run is at stake`);
+    $("status").innerHTML = G.status(s);
   }
   if (now - lastSlow > 500) {
     lastSlow = now;
     $("s-time").textContent = fmtTime(s.t);
-    $("s-zone").textContent = s.maxZone + 1;
+    $("s-zone").textContent = G.maxUnit(s) + 1;
     $("s-deaths").textContent = s.deaths;
     $("s-peak").textContent = peakT.toFixed(2);
     $("s-mean").textContent = (hist.T.length ? sumT / hist.T.length : 0).toFixed(2);
@@ -1289,7 +1619,7 @@ $("btn-struct").onclick = () => { if (compose === "structured") return; compose 
 $("btn-rand").onclick = () => { if (compose === "random") return; compose = "random"; press(["btn-struct", "btn-rand"], "btn-rand"); resetSession(); refocus(); };
 $("chk-futures").onchange = e => { showFutures = e.target.checked; if (!showFutures) paths = []; refocus(); };
 $("btn-restart").onclick = () => { resetSession(); refocus(); };
-$("btn-dash").onclick = () => { dashQueued = true; refocus(); };
+$("btn-dash").onclick = () => { dashQueued = true; refocus(); }; // Dash in the arena, hard drop in Zedris
 $("btn-sound").onclick = () => { const on = !audio.on; audioSet(on); $("btn-sound").setAttribute("aria-pressed", String(audio.on)); $("btn-sound").textContent = audio.on ? "Sound on" : "Sound off"; refocus(); };
 
 /* Rating: the viewer's own felt tension. Relative, so only its ups and downs matter. */
@@ -1330,7 +1660,7 @@ function youResults() {
   for (const i of idx) { lo = Math.min(lo, h.R[i]); hi = Math.max(hi, h.R[i]); }
   if (hi - lo < 0.1) return { flat: true, have: idx.length / 10 };
   // Each curve may lead your rating by up to 3 s, to allow for reaction time.
-  const rows = YOU_CURVES.map(([k, label, color]) => {
+  const rows = YOU_CURVES.map(([k, label, color]) => [k, k === "V" ? G.voicesLabel : label, color]).map(([k, label, color]) => {
     let best = { r: -2, lag: 0 };
     for (let L = 0; L <= 30; L += 2) {
       const a = [], b = [];
@@ -1368,7 +1698,7 @@ function habituation() {
   for (let i = 0; i < h.R.length; i++) if (h.R[i] === h.R[i]) rated.push(h.R[i]);
   if (rated.length < 600) return null;
   const meanR = rated.reduce((a, b) => a + b, 0) / rated.length;
-  const cells = MOTIFS.map(() => HAB_BINS.map(() => [])), broken = [], kept = [];
+  const cells = G.MOTIFS.map(() => HAB_BINS.map(() => [])), broken = [], kept = [];
   for (const m of motifLog) {
     const te = m.t1 == null ? s.t : m.t1, a = idxAt(h.t, m.t), b = idxAt(h.t, te);
     let sum = 0, cnt = 0, ok = b > a;
@@ -1387,7 +1717,7 @@ function renderHabituation() {
   const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
   const fmt = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2);
   $("you-hab").innerHTML = `<thead><tr><th>Motif</th>${HAB_BINS.map(b => `<th class="n">${b[2]}</th>`).join("")}</tr></thead><tbody>` +
-    MOTIFS.map((m, ti) => `<tr><td>${m} ${MOTIF_NAMES[ti]}</td>${cells[ti].map(c => `<td class="n">${c.length ? `${fmt(avg(c))} <span style="color: var(--ink-3)">(${c.length})</span>` : "–"}</td>`).join("")}</tr>`).join("") + "</tbody>";
+    G.MOTIFS.map((m, ti) => `<tr><td>${m} ${G.MOTIF_NAMES[ti]}</td>${cells[ti].map(c => `<td class="n">${c.length ? `${fmt(avg(c))} <span style="color: var(--ink-3)">(${c.length})</span>` : "–"}</td>`).join("")}</tr>`).join("") + "</tbody>";
   const early = [], late = [];
   cells.forEach(row => { early.push(...row[0], ...row[1]); late.push(...row[3], ...row[4]); });
   let note = "Each cell is your average rating while that motif was playing, minus your overall average, with the number of appearances in brackets. ";
@@ -1407,12 +1737,12 @@ function resultsText() {
   const h = hist, res = youCache && youCache.rows ? youCache : youResults();
   const lines = [
     `Tension Score rating session, ${new Date().toISOString()}`,
-    `Who played: ${mode === "bot" ? "bot (spectator rating)" : "you (player rating)"}; death rule: ${rule}; rated seconds: ${Math.round(res.have || 0)}`,
+    `Game: ${G.name}; who played: ${mode === "bot" ? "bot (spectator rating)" : "you (player rating)"}; death rule: ${rule}; rated seconds: ${Math.round(res.have || 0)}`,
     "", "curve,r,lead_s"
   ];
   if (res.rows) for (const r of res.rows) lines.push(`${r.k},${r.r.toFixed(3)},${r.lag.toFixed(1)}`);
   lines.push("", `composition: ${compose}`, "motif,start_s,end_s,appearance,varied,together,broken_pattern,slot,surprise_bits");
-  for (const m of motifLog) lines.push([MOTIFS[m.ti], m.t.toFixed(1), m.t1 == null ? "" : m.t1.toFixed(1), m.n, m.varied ? 1 : 0, m.together, m.violation ? 1 : 0, m.slot, m.bits.toFixed(2)].join(","));
+  for (const m of motifLog) lines.push([G.MOTIFS[m.ti], m.t.toFixed(1), m.t1 == null ? "" : m.t1.toFixed(1), m.n, m.varied ? 1 : 0, m.together, m.violation ? 1 : 0, m.slot, m.bits.toFixed(2)].join(","));
   lines.push("", "t,P,T,ES,SU,I4,Th,U,S,X,V,R");
   for (let i = 0; i < h.t.length; i += 5) if (h.R[i] === h.R[i]) lines.push([h.t[i].toFixed(1), h.P[i].toFixed(2)].concat(["T", "ES", "SU", "I4", "Th", "U", "S", "X", "V", "R"].map(k => h[k][i].toFixed(3))).join(","));
   return lines.join("\n");
@@ -1428,11 +1758,87 @@ function setModeUi() {
   const play = mode === "play";
   gameCanvas.classList.toggle("playing", play);
   $("btn-dash").hidden = !play;
+  $("btn-dash").textContent = G.dashLabel;
   $("btn-1x").disabled = play; $("btn-4x").disabled = play;
   $("btn-4x").style.opacity = play ? 0.45 : ""; $("btn-1x").style.opacity = play ? 0.45 : "";
 }
 
+/* ---------- Game adapters: everything the app needs that differs between the two games ---------- */
+const ArenaGame = {
+  key: "arena", name: "Arena", unit: "zone", Unit: "Zone", zoneLetter: "Z", newMotifWord: "New motif",
+  MOTIFS, MOTIF_NAMES, RO_EVERY: 0.33, trails: true, dashLabel: "Dash", flashY: 16,
+  newState, step, rollouts: (st, want) => rollouts(st, want), botInput: (st, w) => botInput(st, w),
+  progress, bankP, stakesN, threatOf, voicesOf,
+  pressure: st => { let raw = 0; for (const en of st.en) raw += Math.exp(-Math.max(0, Math.hypot(st.pl.x - en.x, st.pl.y - en.y) - 17) / 55); return 1 - Math.exp(-raw / 1.2); },
+  playerInput: () => playerInput(), idle: { mx: 0, my: 0, dash: false }, draw: drawArena,
+  focus: st => st.pl, unitNow: st => st.zone, maxUnit: st => st.maxZone,
+  startText: m => m === "bot" ? "Zone 1" : "Zone 1: collect the sparks",
+  intro: ["Collect 5 sparks, then step into the gate.", "WASD or arrows to move, Space to dash.", "On touch: hold a finger where you want to go."],
+  teach: { dash: "Dash: a short burst of speed. Nothing can hit a dashing player.", hit: "Hit: one heart lost, knocked back, safe for 1 s while blinking.", heal: "Heal: one heart restored.", clear: "", drop: "", rise: "" },
+  status: st => `<b>Zone ${st.zone + 1}</b> &middot; ${st.pl.hp} of ${MAXHP} hearts &middot; ${st.collected} of ${K} sparks &middot; ` +
+    (rule === "checkpoint" ? `next safe point at zone ${(Math.floor(st.zone / 3) + 1) * 3 + 1}` : "permadeath, the whole run is at stake"),
+  voicesText: st => {
+    const act = []; for (const a of st.pat.active) if (act.indexOf(a.ti) < 0) act.push(a.ti);
+    act.sort();
+    return (act.length ? `Playing: ${act.map(ti => `${MOTIFS[ti]} ${MOTIF_NAMES[ti]}`).join(", ")}.` : "No motifs playing.") +
+      (st.pat.compose === "structured" ? ` Form ${FORM_NAMES[st.pat.un - 1]}.` : " Random order.");
+  },
+  voicesLabel: "Motifs playing at once",
+  defs: {
+    threat: "Missing hearts, plus how close the enemies are.", uEvent: "get hit in the next 3 seconds",
+    progress: "Zone number plus sparks collected. The bar is progress through this zone.", loseUnit: "zones",
+    surprise: "How unexpected the latest motifs were, judged by a model that learns the motif sequence as you play.",
+    scoreNote: "The last 60 seconds. Staff lines are zones, bar lines are gates, and a double bar marks a safe point.",
+    furthest: "Furthest zone", legendMotifs: "Motif voices A–D: tick height is surprise, ′ marks a variation, ! a broken pattern",
+    canvasLabel: "Game arena. In play mode, move with WASD or the arrow keys and dash with Space."
+  }
+};
+const ZedrisGame = {
+  key: "zedris", name: "Zedris", unit: "level", Unit: "Level", zoneLetter: "L", newMotifWord: "New piece",
+  MOTIFS: Zedris.LETTERS, MOTIF_NAMES: Zedris.NAMES, RO_EVERY: 0.5, trails: false, dashLabel: "Drop", flashY: 150,
+  newState: Zedris.newState, step: Zedris.step, rollouts: st => Zedris.rollouts(st), botInput: Zedris.botInput,
+  progress: Zedris.progress, bankP: Zedris.bankP, stakesN: Zedris.stakesN, threatOf: Zedris.threatOf, voicesOf: Zedris.voicesOf, pressure: Zedris.pressure,
+  playerInput: dt => zedrisInput(dt), idle: { move: 0, rot: false, soft: false, drop: false }, draw: drawZedris,
+  focus: () => ({ x: Zedris.BX + Zedris.COLS * Zedris.CELL / 2, y: Zedris.BY + Zedris.ROWS * Zedris.CELL / 2 }),
+  unitNow: st => st.level, maxUnit: st => st.maxLevel,
+  startText: m => m === "bot" ? "Level 1" : "Level 1: fill rows to clear them",
+  intro: ["Fill a row to clear it. Every 8 rows is a new level.", "Arrows or A/D move, Up rotates, Down falls faster, Space drops.", "On touch: tap beside the well to move, top half rotates, bottom half drops."],
+  teach: { clear: "Row cleared: a full row disappears.", drop: "Hard drop: the piece falls straight to its outline.", hit: "Hole: a gap with a block above it. Clear the rows above to reach it.", rise: "Rising row: every 10 pieces a row with one gap pushes up.", dash: "", heal: "" },
+  status: st => `<b>Level ${st.level + 1}</b> &middot; ${st.lines} of ${Zedris.LINES_PER_LEVEL} rows &middot; rising row in ${Zedris.PHRASE - st.pieces % Zedris.PHRASE} &middot; ` +
+    (rule === "checkpoint" ? `next safe point at level ${(Math.floor(st.level / 3) + 1) * 3 + 1}` : "permadeath, the whole run is at stake"),
+  voicesText: st => `Piece: ${Zedris.LETTERS[st.cur.t]} ${Zedris.NAMES[st.cur.t]}. Next: ${st.next.map(d => `${Zedris.LETTERS[d.t]} ${Zedris.NAMES[d.t]}`).join(", ")}. ` +
+    (st.compose === "structured" ? "Shuffled sets." : "Random draws.") + ` Open wells: ${Zedris.voicesOf(st)}.`,
+  voicesLabel: "Open wells",
+  defs: {
+    threat: "How high the stack is, plus covered holes and unevenness.", uEvent: "reach the danger zone within the next 8 pieces",
+    progress: "Level number plus rows cleared. The bar is progress through this level.", loseUnit: "levels",
+    surprise: "How unexpected the latest pieces were, judged by a model that learns the piece order as you play.",
+    scoreNote: "The last 60 seconds. Staff lines are levels, bar lines are level-ups, faint lines are rising rows (the meter), and a double bar marks a safe point.",
+    furthest: "Furthest level", legendMotifs: "Piece voices D B H Z C: tick height is surprise, ! a broken set",
+    canvasLabel: "Zedris well. In play mode, move with the arrow keys, rotate with Up and hard drop with Space."
+  }
+};
+const GAMES = { arena: ArenaGame, zedris: ZedrisGame };
+function applyGameUi() {
+  document.querySelectorAll("[data-game]").forEach(el => { el.hidden = el.dataset.game !== game; });
+  const d = G.defs;
+  $("def-Th").textContent = d.threat; $("u-event").textContent = d.uEvent; $("def-P").textContent = d.progress;
+  $("lose-unit").textContent = d.loseUnit; $("def-X").textContent = d.surprise; $("score-note").textContent = d.scoreNote;
+  $("s-zone-label").textContent = d.furthest; $("lg-motifs").textContent = d.legendMotifs;
+  $("futures-wrap").hidden = !G.trails;
+  gameCanvas.setAttribute("aria-label", d.canvasLabel);
+  press(["btn-g-arena", "btn-g-zedris"], game === "arena" ? "btn-g-arena" : "btn-g-zedris");
+}
+function setGame(g) {
+  if (g === game && G) return;
+  game = g; G = GAMES[g];
+  applyGameUi(); setModeUi(); resetSession(); refocus();
+}
+$("btn-g-arena").onclick = () => setGame("arena");
+$("btn-g-zedris").onclick = () => setGame("zedris");
+
 /* Main loop */
+G = ArenaGame; applyGameUi();
 resetSession(); setModeUi();
 let last = performance.now(), acc = 0;
 function frame(now) {

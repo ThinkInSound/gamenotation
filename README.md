@@ -4,8 +4,10 @@ An experiment in writing down play the way music is written down: a **score** of
 
 It has two parts:
 
-- **Tension Score** (`tension-score.html`): a small arena game that measures itself while it runs. You can watch a bot or play yourself, and rate your own tension to see which measure tracks you best.
-- **Tension Score Analysis** (`tension-score-analysis.html`): what seeded bot sessions of that game show when you look at them all at once.
+- **Tension Score** (`tension-score.html`): two small games that measure themselves while they run, scored with the same notation. A switch at the top picks the game. You can watch a bot or play yourself, and rate your own tension to see which measure tracks you best.
+  - **Arena**: a dodging game. Collect sparks, reach the gate, and avoid enemies that arrive in four motifs.
+  - **Zedris**: an original falling-block game with its own five pieces (Duo, Bar, Hook, Zed, Cross), a 9 x 18 well, and a row with one gap that rises from the bottom every 10 pieces. The pieces are the motifs, and the rising rows give the game a regular meter.
+- **Tension Score Analysis** (`tension-score-analysis.html`): what seeded bot sessions of the arena game show when you look at them all at once. Zedris is not in the analysis yet.
 
 Both are single HTML files with no dependencies beyond Google Fonts.
 
@@ -36,6 +38,20 @@ Enemies arrive as four **motifs**: A Pincer, B Crossfire, C Stream and D Ring. W
 
 For comparison, the game also computes Ely-style suspense and surprise, a Left 4 Dead-style intensity, and the number of motifs playing at once.
 
+In **Zedris** the same measures apply with game-specific inputs:
+
+| Measure | In Zedris |
+|---|---|
+| **Progress** | Level plus rows cleared out of 8. |
+| **Threat** | Stack height, covered holes and unevenness. |
+| **Uncertainty** | 24 simulated futures of the next 8 pieces (the two shown, then pieces from the same randomizer), placed by the bot's heuristic. A future fails if the stack enters the danger zone (the top 3 rows). |
+| **Motifs** | The pieces. Structured order deals them in shuffled sets of five, so the order is partly learnable, and a set occasionally breaks. Random order draws each piece independently. |
+| **Concurrency** | Open wells: columns at least 3 lower than both neighbours. |
+
+The bot places pieces with a standard height, lines, holes and unevenness heuristic (after Yiyuan Lee's weights) and moves each piece one step at a time.
+
+The game code is organised so the shared parts (measures, score, rating, sound) are the same for both games. Each game supplies an adapter with its state, moves, bot, simulated futures, drawing and rules text.
+
 ## Rating mode
 
 Press **Rate my tension** and nudge your felt tension up or down while you watch or play: the mouse wheel over the arena, `E`/`Q`, the slider, or the arrow keys while watching. After a minute, the page ranks how well each measure tracks you, allowing for reaction time, and shows how your tension changes across a motif's 1st, 2nd and later appearances. **Copy results** copies the session as text.
@@ -63,7 +79,7 @@ These come from bot play. Whether any of the measures matches what a person feel
 ## Project files
 
 ```
-tension-score.html            the game (artifact source)
+tension-score.html            both games (artifact source)
 tension-score-analysis.html   the analysis page (generated)
 analysis/template.html        analysis page source; data is inlined at build time
 data/arena-analysis.json      output of the headless sessions
