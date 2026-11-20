@@ -10,6 +10,7 @@
   --surface: #fafbfd;
   --ink: #1a1f33;
   --ink-2: #565d77;
+  --ink-3: #868ca3;
   --rule: #d5d8e2;
   --arena: #e5e7ee;
   --arena-grid: #d7dae4;
@@ -25,19 +26,21 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --rule: #2b2f3e;
+    --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --ink-3: #7a8098; --rule: #2b2f3e;
     --arena: #151821; --arena-grid: #20242f;
     --prog: #1aa597; --tension: #e5457d; --threat: #c77a12; --unc: #8b74ee; --stakes: #4a8ddb; --danger: #ff6a5c;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --rule: #2b2f3e;
+  --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --ink-3: #7a8098; --rule: #2b2f3e;
   --arena: #151821; --arena-grid: #20242f;
   --prog: #1aa597; --tension: #e5457d; --threat: #c77a12; --unc: #8b74ee; --stakes: #4a8ddb; --danger: #ff6a5c;
   color-scheme: dark;
 }
 html, body { background: var(--paper); color: var(--ink); }
+body { margin: 0; }
+[hidden] { display: none !important; } /* also when the file is opened directly, without the artifact host's reset */
 body { font-family: var(--body); font-size: 15px; line-height: 1.5; }
 .page {
   max-width: 1180px; margin: 0 auto;
@@ -72,6 +75,26 @@ button:hover { color: var(--ink); }
 button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--unc); outline-offset: 2px; }
 .solo { border: 1px solid var(--rule); border-radius: 8px; }
+/* Control hierarchy: the game choice is the top level; session settings are small labelled controls; utilities sit under the game. */
+.game-tabs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 40px; border-bottom: 1px solid var(--rule); }
+.game-tab {
+  background: none; border: 0; padding: 0 0 12px; position: relative; text-align: left; line-height: 1;
+  font-family: var(--display); font-size: clamp(32px, 4.6vw, 46px); font-weight: 400; color: var(--ink-3);
+}
+.game-tab small { display: block; margin-top: 6px; font: 400 13px/1.35 var(--body); color: var(--ink-3); }
+.game-tab:hover, .game-tab:hover small { color: var(--ink-2); }
+.game-tab[aria-pressed="true"] { background: none; color: var(--ink); }
+.game-tab[aria-pressed="true"] small { color: var(--ink-2); }
+.game-tab[aria-pressed="true"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; border-radius: 2px; background: var(--tension); }
+.controls { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: flex-end; }
+.ctl { display: flex; flex-direction: column; gap: 4px; }
+.ctl-label { font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); }
+.seg.sm button { font-size: 12.5px; padding: 7px 11px; }
+@media (max-width: 560px) {
+  .game-tabs { flex-wrap: nowrap; gap: 20px; }
+  .game-tab { flex: 1 1 0; min-width: 0; font-size: 32px; }
+  .game-tab small { font-size: 12px; }
+}
 .check { display: inline-flex; gap: 7px; align-items: center; font-size: 13px; color: var(--ink-2); cursor: pointer; }
 .check input { accent-color: var(--prog); width: 15px; height: 15px; }
 .spacer { flex: 1; }
@@ -160,31 +183,39 @@ button:disabled { opacity: .45; cursor: default; }
   <header class="masthead">
     <p class="eyebrow">Game analysis theory &middot; live model</p>
     <h1>Tension <em>Score</em></h1>
-    <p class="lede">Two small games that measure themselves while they are played, scored with the same notation. Each moment is scored like music: progress is the melody and tension is the dynamics, with <code>tension = stakes &times; threat &times; uncertainty</code>. Uncertainty comes from simulating 24 possible futures. <b>Arena</b> is a dodging game whose enemies arrive in motifs. <b>Zedris</b> is a falling-block game whose pieces are the motifs.</p>
+    <p class="lede">Two small games that measure themselves while they are played, scored with the same notation. Each moment is scored like music: progress is the melody and tension is the dynamics, with <code>tension = stakes &times; threat &times; uncertainty</code>. Uncertainty comes from simulating 24 possible futures. <b>Arena</b> is a dodging game whose enemies arrive in motifs. <b>Zedrix</b> is a falling-block game whose pieces are the motifs.</p>
   </header>
 
   <section class="stage" aria-label="Game and live readout">
+    <div class="game-tabs" role="group" aria-label="Which game">
+      <button class="game-tab" id="btn-g-arena" aria-pressed="true">Arena<small>Dodge enemies that arrive in motifs</small></button>
+      <button class="game-tab" id="btn-g-zedrix" aria-pressed="false">Zedrix<small>Stack falling pieces; the pieces are the motifs</small></button>
+    </div>
     <div class="arena-col">
-      <div class="toolbar">
-        <div class="seg" role="group" aria-label="Which game">
-          <button id="btn-g-arena" aria-pressed="true">Arena</button>
-          <button id="btn-g-zedris" aria-pressed="false">Zedris</button>
+      <div class="controls">
+        <div class="ctl"><span class="ctl-label" id="lbl-who">Who plays</span>
+          <div class="seg sm" role="group" aria-labelledby="lbl-who">
+            <button id="btn-bot" aria-pressed="true">Watch the bot</button>
+            <button id="btn-play" aria-pressed="false">Play yourself</button>
+          </div>
         </div>
-        <div class="seg" role="group" aria-label="Who plays">
-          <button id="btn-bot" aria-pressed="true">Watch the bot</button>
-          <button id="btn-play" aria-pressed="false">Play yourself</button>
+        <div class="ctl"><span class="ctl-label" id="lbl-speed">Speed</span>
+          <div class="seg sm" role="group" aria-labelledby="lbl-speed">
+            <button id="btn-1x" aria-pressed="true">1&times;</button>
+            <button id="btn-4x" aria-pressed="false">4&times;</button>
+          </div>
         </div>
-        <div class="seg" role="group" aria-label="Speed">
-          <button id="btn-1x" aria-pressed="true">1&times;</button>
-          <button id="btn-4x" aria-pressed="false">4&times;</button>
+        <div class="ctl"><span class="ctl-label" id="lbl-death">Death rule</span>
+          <div class="seg sm" role="group" aria-labelledby="lbl-death">
+            <button id="btn-check" aria-pressed="true">Checkpoints</button>
+            <button id="btn-perma" aria-pressed="false">Permadeath</button>
+          </div>
         </div>
-        <div class="seg" role="group" aria-label="What a death costs">
-          <button id="btn-check" aria-pressed="true">Checkpoints</button>
-          <button id="btn-perma" aria-pressed="false">Permadeath</button>
-        </div>
-        <div class="seg" role="group" aria-label="How motifs are composed">
-          <button id="btn-struct" aria-pressed="true">Structured</button>
-          <button id="btn-rand" aria-pressed="false">Random</button>
+        <div class="ctl"><span class="ctl-label" id="lbl-order">Motif order</span>
+          <div class="seg sm" role="group" aria-labelledby="lbl-order">
+            <button id="btn-struct" aria-pressed="true">Structured</button>
+            <button id="btn-rand" aria-pressed="false">Random</button>
+          </div>
         </div>
       </div>
       <div class="arena-wrap"><canvas id="game" tabindex="0" aria-label="Game arena. In play mode, move with WASD or the arrow keys and dash with Space."></canvas></div>
@@ -198,7 +229,7 @@ button:disabled { opacity: .45; cursor: default; }
       </div>
       <details class="rules" id="rules" open>
         <summary>Rules</summary>
-        <ul data-game="zedris" hidden>
+        <ul data-game="zedrix" hidden>
           <li><b>Goal.</b> Pieces fall into a well 9 cells wide and 18 tall. Fill a row completely to clear it. Every 8 cleared rows is a new level, and pieces fall faster each level.</li>
           <li><b>Pieces.</b> Five shapes: D Duo (2 cells), B Bar (3 in a line), H Hook (3, bent), Z Zed (4, zigzag) and C Cross (5, a plus). The next two pieces are shown on the right.</li>
           <li><b>Moves.</b> Move left and right, rotate (a piece steps sideways if a wall blocks the turn), drop faster, or hard drop straight to the outline below it. A piece locks shortly after it lands.</li>
@@ -330,7 +361,7 @@ button:disabled { opacity: .45; cursor: default; }
         <h3><i style="background: var(--prog)"></i>Progress, the melody</h3>
         <p><code>P = zone + 0.8 &times; sparks / 5</code>, and entering the gate adds the last 0.2. Zones are the staff lines, so a run reads as a rising line, with a drop at each death.</p>
       </div>
-      <div data-game="zedris" hidden>
+      <div data-game="zedrix" hidden>
         <h3><i style="background: var(--prog)"></i>Progress, the melody</h3>
         <p><code>P = level + rows cleared / 8</code>. Levels are the staff lines. Bar lines mark level-ups, and fainter lines mark each rising row, every 10 pieces: the game's built-in meter.</p>
       </div>
@@ -342,11 +373,11 @@ button:disabled { opacity: .45; cursor: default; }
         <h3><i style="background: var(--threat)"></i>Threat</h3>
         <p><code>0.4 &times; missing hearts + 0.6 &times; pressure</code>. Pressure adds up every enemy, weighted by <code>e^(&minus;distance/55)</code>, with half weight for enemies still spawning.</p>
       </div>
-      <div data-game="zedris" hidden>
+      <div data-game="zedrix" hidden>
         <h3><i style="background: var(--threat)"></i>Threat</h3>
         <p><code>0.7 &times; (stack height / 18)^1.5 + 0.2 &times; holes / 10 + 0.1 &times; unevenness / 24</code>, capped at 1. A hole is an empty cell with a block above it, and unevenness adds up the height differences between neighbouring columns.</p>
       </div>
-      <div data-game="zedris" hidden>
+      <div data-game="zedrix" hidden>
         <h3><i style="background: var(--unc)"></i>Uncertainty</h3>
         <p>Twice a second, the game copies the well and plays the next 8 pieces forward 24 times: the current piece and the two shown, then pieces from the same randomizer, placed by the bot's method with random variation. A future fails if the stack enters the danger zone or tops out. If <code>p</code> is the share of futures that stay clear, uncertainty is <code>H(p)</code>.</p>
       </div>
@@ -362,7 +393,7 @@ button:disabled { opacity: .45; cursor: default; }
         <h3><i style="background: var(--ink-2)"></i>Suspension and resolution</h3>
         <p>A suspension starts when progress has stalled for 2 seconds while threat rose by 0.15 or more and tension is above 0.35. It resolves when progress moves on, breaks on a hit, or fades if tension drops away. The tension cycle is the strongest repeat period in the tension curve, found by autocorrelation.</p>
       </div>
-      <div data-game="zedris" hidden>
+      <div data-game="zedrix" hidden>
         <h3><i style="background: var(--ink-2)"></i>Pieces as motifs</h3>
         <p>Each piece is a note in the motifs lane: D Duo, B Bar, H Hook, Z Zed, C Cross. With <b>Structured</b> order, pieces come in shuffled sets of five, so the last piece of a set is fully predictable, and after two sets a set occasionally breaks (marked !). With <b>Random</b> order, pieces are independent. Pattern surprise uses the same learning model as the arena. The bot places each piece with a standard heuristic (aggregate height, lines, holes and unevenness, after Yiyuan Lee&rsquo;s weights) and moves it one step at a time. The motifs-at-once measure becomes <b>open wells</b>: columns at least 3 lower than both neighbours, each a plan the player is keeping open.</p>
       </div>
@@ -722,8 +753,8 @@ function expectSurprisal(m, ti) {
 }
 const SURPRISE_DECAY = 2.5, SURPRISE_BITS = 7; // trace decays over 2.5 s; 7 bits fills it
 
-/* ---------- Zedris: an original falling-block game scored with the same notation ---------- */
-const Zedris = (() => {
+/* ---------- Zedrix: an original falling-block game scored with the same notation ---------- */
+const Zedrix = (() => {
   const COLS = 9, ROWS = 18, CELL = 24, BX = Math.round((W - COLS * CELL) / 2), BY = Math.round((H - ROWS * CELL) / 2);
   const DANGER_ROWS = 3, PHRASE = 10, LINES_PER_LEVEL = 8, BREAK_RATE = 0.12, LOCK_DELAY = 0.35, HORIZON = 8;
   const LETTERS = ["D", "B", "H", "Z", "C"], NAMES = ["Duo", "Bar", "Hook", "Zed", "Cross"];
@@ -944,7 +975,7 @@ const Zedris = (() => {
 })();
 // CORE-END
 if (typeof window === "undefined") {
-  module.exports = { W, H, newState, step, botInput, rollouts, entropy, threatOf, stakesN, tensionOf, progress, gauss, MOTIFS, MOTIF_NAMES, voicesOf, newExpect, expectSurprisal, SURPRISE_DECAY, SURPRISE_BITS, FORMS, FORM_NAMES, motifsUnlocked, Zedris };
+  module.exports = { W, H, newState, step, botInput, rollouts, entropy, threatOf, stakesN, tensionOf, progress, gauss, MOTIFS, MOTIF_NAMES, voicesOf, newExpect, expectSurprisal, SURPRISE_DECAY, SURPRISE_BITS, FORMS, FORM_NAMES, motifsUnlocked, Zedrix };
   return;
 }
 
@@ -955,7 +986,7 @@ const gameCanvas = $("game"), scoreCanvas = $("score"), overCanvas = $("overview
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let mode = "bot", speed = 1, rule = "checkpoint", showFutures = true, compose = "structured";
-let game = "arena", G = null; // G is the adapter for the game being played (ArenaGame or ZedrisGame, defined below)
+let game = "arena", G = null; // G is the adapter for the game being played (ArenaGame or ZedrixGame, defined below)
 let s, hist, markers, susp, suspList, U_est, U_disp, hitsLast, paths, lastRoll, lastSample, wander, flashes, particles, rings, started, peakT, sumT, pRaw, pS, I4, youCache, xTrace, expectM, motifLog;
 
 function resetSession() {
@@ -989,7 +1020,7 @@ if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors
 
 /* Input */
 const keys = new Set();
-const pressQueue = [], tapQueue = []; // key presses and taps since the last tick (used by Zedris)
+const pressQueue = [], tapQueue = []; // key presses and taps since the last tick (used by Zedrix)
 let dashQueued = false;
 const pointer = { active: false, x: 0, y: 0, id: null };
 const GAME_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight"]);
@@ -1033,9 +1064,9 @@ function playerInput() {
   const dash = dashQueued; dashQueued = false;
   return { mx, my, dash };
 }
-// Zedris controls: a press moves or rotates once; holding left or right repeats after a short delay.
+// Zedrix controls: a press moves or rotates once; holding left or right repeats after a short delay.
 const zHold = { dir: 0, t: 0 };
-function zedrisInput(dt) {
+function zedrixInput(dt) {
   let move = 0, rot = false, drop = false;
   for (const code of pressQueue) {
     if (code === "ArrowLeft" || code === "KeyA") { move = -1; zHold.dir = -1; zHold.t = 0.17; }
@@ -1043,7 +1074,7 @@ function zedrisInput(dt) {
     else if (code === "ArrowUp" || code === "KeyW") rot = true;
     else if (code === "Space") drop = true;
   }
-  const Z = Zedris;
+  const Z = Zedrix;
   for (const tp of tapQueue) {
     if (tp.x < Z.BX) move = -1;
     else if (tp.x > Z.BX + Z.COLS * Z.CELL) move = 1;
@@ -1320,9 +1351,9 @@ function drawArena(ctx, t) {
     if (i < p.hp) { ctx.fillStyle = C.tension; ctx.fill(); } else { ctx.strokeStyle = alpha(C["ink-2"], 0.6); ctx.lineWidth = 1.5; ctx.stroke(); }
   }
   ctx.font = `500 12px ${FONT_MONO}`; ctx.fillStyle = C["ink-2"];
-  ctx.fillText(`${"★".repeat(s.collected)}${"☆".repeat(K - s.collected)}`, 14, 52);
+  ctx.fillText(`${"\u2605".repeat(s.collected)}${"\u2606".repeat(K - s.collected)}`, 14, 52);
   ctx.textAlign = "right";
-  ctx.fillText(mode === "bot" ? `BOT PLAYING ${speed}×` : "YOU ARE PLAYING", W - 14, 14);
+  ctx.fillText(mode === "bot" ? `BOT PLAYING ${speed}\u00d7` : "YOU ARE PLAYING", W - 14, 14);
   ctx.fillText(rule === "checkpoint" ? `SAFE POINT: ZONE ${bankP(s) + 1}` : "PERMADEATH", W - 14, 30);
 }
 function drawOverlay(ctx, t) {
@@ -1348,9 +1379,9 @@ function drawOverlay(ctx, t) {
     G.intro.forEach((line, i) => ctx.fillText(line, W / 2, H / 2 - 10 + i * 20));
   }
 }
-// Zedris: the well in the middle, level and rising-row counter on the left, the next two pieces on the right.
-function drawZedris(ctx, t) {
-  const Z = Zedris, CE = Z.CELL, x0 = Z.BX, y0 = Z.BY, ww = Z.COLS * CE, hh = Z.ROWS * CE, b = s.board, c = s.cur;
+// Zedrix: the well in the middle, level and rising-row counter on the left, the next two pieces on the right.
+function drawZedrix(ctx, t) {
+  const Z = Zedrix, CE = Z.CELL, x0 = Z.BX, y0 = Z.BY, ww = Z.COLS * CE, hh = Z.ROWS * CE, b = s.board, c = s.cur;
   ctx.fillStyle = C.arena; ctx.fillRect(0, 0, W, H);
   ctx.fillStyle = alpha(C.ink, 0.035); ctx.fillRect(x0, y0, ww, hh);
   ctx.fillStyle = alpha(C.danger, 0.09); ctx.fillRect(x0, y0, ww, Z.DANGER_ROWS * CE);
@@ -1381,7 +1412,7 @@ function drawZedris(ctx, t) {
   for (let i = 0; i < Z.PHRASE; i++) { ctx.fillStyle = i < Z.PHRASE - toRise ? C["ink-2"] : alpha(C["ink-2"], 0.25); ctx.fillRect(lx + i * 14, 90, 10, 6); }
   ctx.fillStyle = C["ink-2"];
   ctx.fillText(rule === "checkpoint" ? `Safe point: level ${Z.bankP(s) + 1}` : "Permadeath", lx, 112);
-  ctx.fillText(mode === "bot" ? `BOT PLAYING ${speed}×` : "YOU ARE PLAYING", lx, H - 36);
+  ctx.fillText(mode === "bot" ? `BOT PLAYING ${speed}\u00d7` : "YOU ARE PLAYING", lx, H - 36);
   // right panel: next pieces
   const rx = x0 + ww + 28;
   ctx.font = `500 12px ${FONT_MONO}`; ctx.fillStyle = C["ink-2"]; ctx.fillText("NEXT", rx, 40);
@@ -1439,7 +1470,7 @@ function drawScore() {
       ctx.fillStyle = C.ink; ctx.fillRect(X(m.t) - 1, y + bh - tk, 2, tk);
       if (X(m.t) - lastLbl[m.ti] > 30 && bh >= 9) {
         ctx.fillStyle = C.ink; ctx.font = `500 ${Math.min(11, bh)}px ${FONT_MONO}`;
-        ctx.fillText(G.MOTIFS[m.ti] + (m.varied ? "′" : "") + (m.violation ? "!" : "") + (m.n === 1 ? " new" : ""), X(m.t) + 4, y + bh / 2);
+        ctx.fillText(G.MOTIFS[m.ti] + (m.varied ? "\u2032" : "") + (m.violation ? "!" : "") + (m.n === 1 ? " new" : ""), X(m.t) + 4, y + bh / 2);
         lastLbl[m.ti] = X(m.t);
       }
     }
@@ -1471,11 +1502,11 @@ function drawScore() {
     } else if (m.type === "death") {
       ctx.strokeStyle = C.danger; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(x, top.y0); ctx.lineTo(x, bot.y1); ctx.stroke();
-      ctx.fillStyle = C.danger; ctx.textAlign = "left"; ctx.fillText(`FALL −${m.lost.toFixed(1)}`, x + 5, top.y1 - 6);
+      ctx.fillStyle = C.danger; ctx.textAlign = "left"; ctx.fillText(`FALL \u2212${m.lost.toFixed(1)}`, x + 5, top.y1 - 6);
     } else if (m.type === "hit") {
       ctx.strokeStyle = C.danger; ctx.lineWidth = 1.5;
       ctx.beginPath(); ctx.moveTo(x, bot.y1); ctx.lineTo(x, bot.y1 + 7); ctx.stroke();
-    } else if (m.type === "rise") { // Zedris rising rows: the meter
+    } else if (m.type === "rise") { // Zedrix rising rows: the meter
       ctx.strokeStyle = alpha(C.ink, 0.2); ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(x, top.y0); ctx.lineTo(x, bot.y1); ctx.stroke();
     }
@@ -1619,7 +1650,7 @@ $("btn-struct").onclick = () => { if (compose === "structured") return; compose 
 $("btn-rand").onclick = () => { if (compose === "random") return; compose = "random"; press(["btn-struct", "btn-rand"], "btn-rand"); resetSession(); refocus(); };
 $("chk-futures").onchange = e => { showFutures = e.target.checked; if (!showFutures) paths = []; refocus(); };
 $("btn-restart").onclick = () => { resetSession(); refocus(); };
-$("btn-dash").onclick = () => { dashQueued = true; refocus(); }; // Dash in the arena, hard drop in Zedris
+$("btn-dash").onclick = () => { dashQueued = true; refocus(); }; // Dash in the arena, hard drop in Zedrix
 $("btn-sound").onclick = () => { const on = !audio.on; audioSet(on); $("btn-sound").setAttribute("aria-pressed", String(audio.on)); $("btn-sound").textContent = audio.on ? "Sound on" : "Sound off"; refocus(); };
 
 /* Rating: the viewer's own felt tension. Relative, so only its ups and downs matter. */
@@ -1692,7 +1723,7 @@ function renderYou() {
   renderHabituation();
 }
 // Habituation: your rating during each appearance of a motif, relative to your average rating.
-const HAB_BINS = [[1, 1, "1st"], [2, 2, "2nd"], [3, 3, "3rd"], [4, 6, "4th–6th"], [7, 1e9, "7th+"]];
+const HAB_BINS = [[1, 1, "1st"], [2, 2, "2nd"], [3, 3, "3rd"], [4, 6, "4th\u20136th"], [7, 1e9, "7th+"]];
 function habituation() {
   const h = hist, rated = [];
   for (let i = 0; i < h.R.length; i++) if (h.R[i] === h.R[i]) rated.push(h.R[i]);
@@ -1715,9 +1746,9 @@ function renderHabituation() {
   $("you-hab-h").hidden = !show; $("you-hab-note").hidden = !show; $("you-hab-box").hidden = !show;
   if (!show) return;
   const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
-  const fmt = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2);
+  const fmt = v => (v >= 0 ? "+" : "\u2212") + Math.abs(v).toFixed(2);
   $("you-hab").innerHTML = `<thead><tr><th>Motif</th>${HAB_BINS.map(b => `<th class="n">${b[2]}</th>`).join("")}</tr></thead><tbody>` +
-    G.MOTIFS.map((m, ti) => `<tr><td>${m} ${G.MOTIF_NAMES[ti]}</td>${cells[ti].map(c => `<td class="n">${c.length ? `${fmt(avg(c))} <span style="color: var(--ink-3)">(${c.length})</span>` : "–"}</td>`).join("")}</tr>`).join("") + "</tbody>";
+    G.MOTIFS.map((m, ti) => `<tr><td>${m} ${G.MOTIF_NAMES[ti]}</td>${cells[ti].map(c => `<td class="n">${c.length ? `${fmt(avg(c))} <span style="color: var(--ink-3)">(${c.length})</span>` : "\u2013"}</td>`).join("")}</tr>`).join("") + "</tbody>";
   const early = [], late = [];
   cells.forEach(row => { early.push(...row[0], ...row[1]); late.push(...row[3], ...row[4]); });
   let note = "Each cell is your average rating while that motif was playing, minus your overall average, with the number of appearances in brackets. ";
@@ -1789,25 +1820,25 @@ const ArenaGame = {
     progress: "Zone number plus sparks collected. The bar is progress through this zone.", loseUnit: "zones",
     surprise: "How unexpected the latest motifs were, judged by a model that learns the motif sequence as you play.",
     scoreNote: "The last 60 seconds. Staff lines are zones, bar lines are gates, and a double bar marks a safe point.",
-    furthest: "Furthest zone", legendMotifs: "Motif voices A–D: tick height is surprise, ′ marks a variation, ! a broken pattern",
+    furthest: "Furthest zone", legendMotifs: "Motif voices A\u2013D: tick height is surprise, \u2032 marks a variation, ! a broken pattern",
     canvasLabel: "Game arena. In play mode, move with WASD or the arrow keys and dash with Space."
   }
 };
-const ZedrisGame = {
-  key: "zedris", name: "Zedris", unit: "level", Unit: "Level", zoneLetter: "L", newMotifWord: "New piece",
-  MOTIFS: Zedris.LETTERS, MOTIF_NAMES: Zedris.NAMES, RO_EVERY: 0.5, trails: false, dashLabel: "Drop", flashY: 150,
-  newState: Zedris.newState, step: Zedris.step, rollouts: st => Zedris.rollouts(st), botInput: Zedris.botInput,
-  progress: Zedris.progress, bankP: Zedris.bankP, stakesN: Zedris.stakesN, threatOf: Zedris.threatOf, voicesOf: Zedris.voicesOf, pressure: Zedris.pressure,
-  playerInput: dt => zedrisInput(dt), idle: { move: 0, rot: false, soft: false, drop: false }, draw: drawZedris,
-  focus: () => ({ x: Zedris.BX + Zedris.COLS * Zedris.CELL / 2, y: Zedris.BY + Zedris.ROWS * Zedris.CELL / 2 }),
+const ZedrixGame = {
+  key: "zedrix", name: "Zedrix", unit: "level", Unit: "Level", zoneLetter: "L", newMotifWord: "New piece",
+  MOTIFS: Zedrix.LETTERS, MOTIF_NAMES: Zedrix.NAMES, RO_EVERY: 0.5, trails: false, dashLabel: "Drop", flashY: 150,
+  newState: Zedrix.newState, step: Zedrix.step, rollouts: st => Zedrix.rollouts(st), botInput: Zedrix.botInput,
+  progress: Zedrix.progress, bankP: Zedrix.bankP, stakesN: Zedrix.stakesN, threatOf: Zedrix.threatOf, voicesOf: Zedrix.voicesOf, pressure: Zedrix.pressure,
+  playerInput: dt => zedrixInput(dt), idle: { move: 0, rot: false, soft: false, drop: false }, draw: drawZedrix,
+  focus: () => ({ x: Zedrix.BX + Zedrix.COLS * Zedrix.CELL / 2, y: Zedrix.BY + Zedrix.ROWS * Zedrix.CELL / 2 }),
   unitNow: st => st.level, maxUnit: st => st.maxLevel,
   startText: m => m === "bot" ? "Level 1" : "Level 1: fill rows to clear them",
   intro: ["Fill a row to clear it. Every 8 rows is a new level.", "Arrows or A/D move, Up rotates, Down falls faster, Space drops.", "On touch: tap beside the well to move, top half rotates, bottom half drops."],
   teach: { clear: "Row cleared: a full row disappears.", drop: "Hard drop: the piece falls straight to its outline.", hit: "Hole: a gap with a block above it. Clear the rows above to reach it.", rise: "Rising row: every 10 pieces a row with one gap pushes up.", dash: "", heal: "" },
-  status: st => `<b>Level ${st.level + 1}</b> &middot; ${st.lines} of ${Zedris.LINES_PER_LEVEL} rows &middot; rising row in ${Zedris.PHRASE - st.pieces % Zedris.PHRASE} &middot; ` +
+  status: st => `<b>Level ${st.level + 1}</b> &middot; ${st.lines} of ${Zedrix.LINES_PER_LEVEL} rows &middot; rising row in ${Zedrix.PHRASE - st.pieces % Zedrix.PHRASE} &middot; ` +
     (rule === "checkpoint" ? `next safe point at level ${(Math.floor(st.level / 3) + 1) * 3 + 1}` : "permadeath, the whole run is at stake"),
-  voicesText: st => `Piece: ${Zedris.LETTERS[st.cur.t]} ${Zedris.NAMES[st.cur.t]}. Next: ${st.next.map(d => `${Zedris.LETTERS[d.t]} ${Zedris.NAMES[d.t]}`).join(", ")}. ` +
-    (st.compose === "structured" ? "Shuffled sets." : "Random draws.") + ` Open wells: ${Zedris.voicesOf(st)}.`,
+  voicesText: st => `Piece: ${Zedrix.LETTERS[st.cur.t]} ${Zedrix.NAMES[st.cur.t]}. Next: ${st.next.map(d => `${Zedrix.LETTERS[d.t]} ${Zedrix.NAMES[d.t]}`).join(", ")}. ` +
+    (st.compose === "structured" ? "Shuffled sets." : "Random draws.") + ` Open wells: ${Zedrix.voicesOf(st)}.`,
   voicesLabel: "Open wells",
   defs: {
     threat: "How high the stack is, plus covered holes and unevenness.", uEvent: "reach the danger zone within the next 8 pieces",
@@ -1815,10 +1846,10 @@ const ZedrisGame = {
     surprise: "How unexpected the latest pieces were, judged by a model that learns the piece order as you play.",
     scoreNote: "The last 60 seconds. Staff lines are levels, bar lines are level-ups, faint lines are rising rows (the meter), and a double bar marks a safe point.",
     furthest: "Furthest level", legendMotifs: "Piece voices D B H Z C: tick height is surprise, ! a broken set",
-    canvasLabel: "Zedris well. In play mode, move with the arrow keys, rotate with Up and hard drop with Space."
+    canvasLabel: "Zedrix well. In play mode, move with the arrow keys, rotate with Up and hard drop with Space."
   }
 };
-const GAMES = { arena: ArenaGame, zedris: ZedrisGame };
+const GAMES = { arena: ArenaGame, zedrix: ZedrixGame };
 function applyGameUi() {
   document.querySelectorAll("[data-game]").forEach(el => { el.hidden = el.dataset.game !== game; });
   const d = G.defs;
@@ -1827,7 +1858,7 @@ function applyGameUi() {
   $("s-zone-label").textContent = d.furthest; $("lg-motifs").textContent = d.legendMotifs;
   $("futures-wrap").hidden = !G.trails;
   gameCanvas.setAttribute("aria-label", d.canvasLabel);
-  press(["btn-g-arena", "btn-g-zedris"], game === "arena" ? "btn-g-arena" : "btn-g-zedris");
+  press(["btn-g-arena", "btn-g-zedrix"], game === "arena" ? "btn-g-arena" : "btn-g-zedrix");
 }
 function setGame(g) {
   if (g === game && G) return;
@@ -1835,7 +1866,7 @@ function setGame(g) {
   applyGameUi(); setModeUi(); resetSession(); refocus();
 }
 $("btn-g-arena").onclick = () => setGame("arena");
-$("btn-g-zedris").onclick = () => setGame("zedris");
+$("btn-g-zedrix").onclick = () => setGame("zedrix");
 
 /* Main loop */
 G = ArenaGame; applyGameUi();

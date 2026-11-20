@@ -41,6 +41,8 @@
   color-scheme: dark;
 }
 html, body { background: var(--paper); color: var(--ink); }
+body { margin: 0; }
+[hidden] { display: none !important; } /* also when the file is opened directly, without the artifact host's reset */
 body { font-family: var(--body); font-size: 15px; line-height: 1.55; }
 .page {
   max-width: 1080px; margin: 0 auto;
@@ -516,7 +518,7 @@ function excerpt(mode, idP, idT, group) {
   const lo = Math.floor(minP), hi = Math.max(lo + 4, Math.ceil(maxP + 0.2));
   const zTicks = []; for (let z = lo; z <= hi; z++) zTicks.push(z);
   const every = Math.ceil((hi - lo) / 4);
-  const markers = E.events.map(e => ({ x: e.t, kind: e.kind === "gate" ? "bar" : e.kind, label: e.kind === "death" ? `FALL −${f2(e.lost).replace(/0$/, "")}` : e.kind === "bank" ? "BANKED" : "" }));
+  const markers = E.events.map(e => ({ x: e.t, kind: e.kind === "gate" ? "bar" : e.kind, label: e.kind === "death" ? `FALL \u2212${f2(e.lost).replace(/0$/, "")}` : e.kind === "bank" ? "BANKED" : "" }));
   const hits = E.hits.map(t => ({ x: t, kind: "hit" }));
   const xTicks = [0, 20, 40, 60, 80, 100, 120];
   const xFmt = t => `${Math.round(t)} s`;
@@ -555,7 +557,7 @@ const KIND = { gate: "Gate", bank: "Safe point", hit: "Hit", death: "Death" };
     const host = document.createElement("div"); card.appendChild(host); grid.appendChild(card);
     lineChart(host, {
       x: LOFF, xDomain: [-10, 10], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 170,
-      xTicks: [-10, -5, 0, 5, 10], xFmt: v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v) + " s", tipX: v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} s from the ${KIND[kind].toLowerCase()}`,
+      xTicks: [-10, -5, 0, 5, 10], xFmt: v => (v > 0 ? "+" : v < 0 ? "\u2212" : "") + Math.abs(v) + " s", tipX: v => `${v > 0 ? "+" : v < 0 ? "\u2212" : ""}${Math.abs(v).toFixed(1)} s from the ${KIND[kind].toLowerCase()}`,
       series: [
         { label: "Tension", values: L.T.mean, lo: L.T.q1, hi: L.T.q3, color: "--tension", width: 2.4 },
         { label: "Stakes", values: L.Sn.mean, color: "--stakes", width: 1.5 },
@@ -573,7 +575,7 @@ const KIND = { gate: "Gate", bank: "Safe point", hit: "Hit", death: "Death" };
     const L = D.modes[mode].locked[kind]; if (!L) continue;
     for (const k of ["T", "Sn", "Th", "U"]) rowsH += `<tr><td>${KIND[kind]}, ${ML[mode].toLowerCase()}</td><td>${MEAS[k].label}</td>${offs.map(o => `<td class="n">${f2(at(L[k].mean, o))}</td>`).join("")}</tr>`;
   }
-  $("locked-table").innerHTML = `<thead><tr><th>Event</th><th>Measure</th>${offs.map(o => `<th class="n">${o > 0 ? "+" : o < 0 ? "−" : ""}${Math.abs(o)} s</th>`).join("")}</tr></thead><tbody>${rowsH}</tbody>`;
+  $("locked-table").innerHTML = `<thead><tr><th>Event</th><th>Measure</th>${offs.map(o => `<th class="n">${o > 0 ? "+" : o < 0 ? "\u2212" : ""}${Math.abs(o)} s</th>`).join("")}</tr></thead><tbody>${rowsH}</tbody>`;
   const g = D.modes.checkpoint.locked.gate, d = D.modes.checkpoint.locked.death, h = D.modes.checkpoint.locked.hit;
   const drop = win(g.T.mean, -2, -0.1) - win(g.T.mean, 1, 3);
   let peakI = 0; for (let i = 70; i <= 130; i++) if (h.T.mean[i] > h.T.mean[peakI] || peakI === 0) peakI = i;
@@ -613,8 +615,8 @@ function phase(mode, id) {
       ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText(v.toFixed(2).replace(/0$/, ""), m.l - 7, y(v));
     }
     ctx.fillStyle = css("--ink-2"); ctx.font = `500 11px ${css("--body")}`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
-    ctx.fillText("Threat →", (m.l + W - m.r) / 2, H - 3);
-    ctx.save(); ctx.translate(11, (m.t + H - m.b) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("Uncertainty →", 0, 0); ctx.restore();
+    ctx.fillText("Threat \u2192", (m.l + W - m.r) / 2, H - 3);
+    ctx.save(); ctx.translate(11, (m.t + H - m.b) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("Uncertainty \u2192", 0, 0); ctx.restore();
     const pts = P.pts.slice().sort((a, b) => a[2] - b[2]);
     ctx.globalAlpha = 0.4;
     for (const p of pts) { ctx.fillStyle = rampAt(p[2]); ctx.beginPath(); ctx.arc(x(p[0]), y(p[1]), 2.2, 0, 6.283); ctx.fill(); }
@@ -632,7 +634,7 @@ function phase(mode, id) {
       for (const p of tr) { ctx.beginPath(); ctx.arc(x(p[0]), y(p[1]), 2.5, 0, 6.283); ctx.fill(); }
       const a = tr[0], b = tr[tr.length - 1];
       ctx.font = `500 10px ${css("--mono")}`;
-      halo("−25 s", x(a[0]) + 6, y(a[1]) - 6, "left");
+      halo("\u221225 s", x(a[0]) + 6, y(a[1]) - 6, "left");
       ctx.fillStyle = css("--ink"); ctx.beginPath(); ctx.arc(x(a[0]), y(a[1]), 4, 0, 6.283); ctx.fill();
       ctx.strokeStyle = css("--danger"); ctx.lineWidth = 2.5; ctx.beginPath();
       ctx.moveTo(x(b[0]) - 5, y(b[1]) - 5); ctx.lineTo(x(b[0]) + 5, y(b[1]) + 5); ctx.moveTo(x(b[0]) + 5, y(b[1]) - 5); ctx.lineTo(x(b[0]) - 5, y(b[1]) + 5); ctx.stroke();
@@ -692,14 +694,14 @@ function mirrorHist(host, key) {
       if (hd > 0.5) el("path", { d: `M${x0},${mid + 1}V${mid + 1 + hd - rr}Q${x0},${mid + 1 + hd} ${x0 + rr},${mid + 1 + hd}H${x0 + bw - rr}Q${x0 + bw},${mid + 1 + hd} ${x0 + bw},${mid + 1 + hd - rr}V${mid + 1}Z`, style: `fill: var(${MEAS[key].color}); opacity: .55` }, svg);
       const hitR = el("rect", { x: cx - (x(0.05) - x(0)) / 2, y: m.t, width: x(0.05) - x(0), height: H - m.t - m.b, class: "hit" }, svg);
       hitR.addEventListener("pointerenter", () => {
-        tip.innerHTML = `<div class="th">${MEAS[key].label} ${(i * 0.05).toFixed(2)}–${(i * 0.05 + 0.05).toFixed(2)}</div><div class="row"><span>Checkpoints</span><span class="v">${(a[i] * 100).toFixed(1)}%</span></div><div class="row"><span>Permadeath</span><span class="v">${(b[i] * 100).toFixed(1)}%</span></div>`;
+        tip.innerHTML = `<div class="th">${MEAS[key].label} ${(i * 0.05).toFixed(2)}\u2013${(i * 0.05 + 0.05).toFixed(2)}</div><div class="row"><span>Checkpoints</span><span class="v">${(a[i] * 100).toFixed(1)}%</span></div><div class="row"><span>Permadeath</span><span class="v">${(b[i] * 100).toFixed(1)}%</span></div>`;
         tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = (cx + 14 + tw > W ? cx - 14 - tw : cx + 14) + "px"; tip.style.top = m.t + "px";
       });
       hitR.addEventListener("pointerleave", () => tip.hidden = true);
     }
     el("line", { x1: m.l, x2: W - m.r, y1: mid, y2: mid, class: "axis" }, svg);
-    el("text", { x: W - m.r, y: m.t + 2, class: "tick", "text-anchor": "end", text: "CHECKPOINTS ↑" }, svg);
-    el("text", { x: W - m.r, y: H - m.b - 4, class: "tick", "text-anchor": "end", text: "PERMADEATH ↓" }, svg);
+    el("text", { x: W - m.r, y: m.t + 2, class: "tick", "text-anchor": "end", text: "CHECKPOINTS \u2191" }, svg);
+    el("text", { x: W - m.r, y: H - m.b - 4, class: "tick", "text-anchor": "end", text: "PERMADEATH \u2193" }, svg);
   });
 }
 (function dist() {
@@ -715,7 +717,7 @@ function mirrorHist(host, key) {
       markers: R.deaths.map(t => ({ x: t, kind: "death" })).concat(R.banks.map(t => ({ x: t, kind: "bar" }))), aria: `Stakes over one ${ML[mode].toLowerCase()} session`
     });
   }
-  const bins = Array.from({ length: 20 }, (_, i) => `${(i * 0.05).toFixed(2)}–${(i * 0.05 + 0.05).toFixed(2)}`);
+  const bins = Array.from({ length: 20 }, (_, i) => `${(i * 0.05).toFixed(2)}\u2013${(i * 0.05 + 0.05).toFixed(2)}`);
   $("hist-table").innerHTML = `<thead><tr><th>Level</th>${["T", "Sn", "Th", "U"].map(k => `<th class="n">${MEAS[k].label} CP</th><th class="n">${MEAS[k].label} PD</th>`).join("")}</tr></thead><tbody>` +
     bins.map((b, i) => `<tr><td>${b}</td>${["T", "Sn", "Th", "U"].map(k => `<td class="n">${(D.modes.checkpoint.hist[k][i] * 100).toFixed(1)}%</td><td class="n">${(D.modes.permadeath.hist[k][i] * 100).toFixed(1)}%</td>`).join("")}</tr>`).join("") + "</tbody>";
   const c = S.checkpoint, p = S.permadeath;
@@ -768,11 +770,11 @@ function pianoRoll(host, mode) {
       if (mo.t0 >= 0) {
         const tk = Math.max(3, bh * Math.min(1, mo.bits / 7));
         el("rect", { x: x(mo.t0) - 1, y: y + bh - tk, width: 2, height: tk, style: "fill: var(--ink)" }, svg);
-        if (x(mo.t0) - lastLbl[mo.ti] > 46) { el("text", { x: x(mo.t0) + 4, y: y + bh / 2 + 4, class: "tick", style: "fill: var(--ink)", text: MOTIF[mo.ti] + (mo.varied ? "′" : "") + (mo.violation ? "!" : "") + (mo.n === 1 ? " new" : "") }, svg); lastLbl[mo.ti] = x(mo.t0); }
+        if (x(mo.t0) - lastLbl[mo.ti] > 46) { el("text", { x: x(mo.t0) + 4, y: y + bh / 2 + 4, class: "tick", style: "fill: var(--ink)", text: MOTIF[mo.ti] + (mo.varied ? "\u2032" : "") + (mo.violation ? "!" : "") + (mo.n === 1 ? " new" : "") }, svg); lastLbl[mo.ti] = x(mo.t0); }
       }
       const hr = el("rect", { x: xa, y, width: Math.max(6, xb - xa), height: bh, class: "hit" }, svg);
       hr.addEventListener("pointerenter", () => {
-        tip.innerHTML = `<div class="th">${MOTIF[mo.ti]} ${MOTIF_NAME[mo.ti]}${mo.varied ? ", varied" : ""}${mo.violation ? ", broken pattern" : ""}</div><div class="row"><span>Appearance</span><span class="v">${ord(mo.n)}</span></div><div class="row"><span>Surprise</span><span class="v">${mo.bits.toFixed(1)} bits</span></div><div class="row"><span>Playing</span><span class="v">${Math.max(0, mo.t0).toFixed(0)}–${Math.min(120, mo.t1).toFixed(0)} s</span></div>`;
+        tip.innerHTML = `<div class="th">${MOTIF[mo.ti]} ${MOTIF_NAME[mo.ti]}${mo.varied ? ", varied" : ""}${mo.violation ? ", broken pattern" : ""}</div><div class="row"><span>Appearance</span><span class="v">${ord(mo.n)}</span></div><div class="row"><span>Surprise</span><span class="v">${mo.bits.toFixed(1)} bits</span></div><div class="row"><span>Playing</span><span class="v">${Math.max(0, mo.t0).toFixed(0)}\u2013${Math.min(120, mo.t1).toFixed(0)} s</span></div>`;
         tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = Math.min(W - tw, xa) + "px"; tip.style.top = (y + bh + 4) + "px";
       });
       hr.addEventListener("pointerleave", () => tip.hidden = true);
@@ -801,7 +803,7 @@ function voicesBars(host, mode) {
       hr.addEventListener("pointerenter", () => { tip.innerHTML = `<div class="th">${i} motif${i === 1 ? "" : "s"} playing</div>${tipRow("--tension", "Mean tension", t.toFixed(2))}<div class="row"><span>Share of time</span><span class="v">${pct(V.share[i])}</span></div>`; tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = Math.min(W - tw, cx + 10) + "px"; tip.style.top = m.t + "px"; });
       hr.addEventListener("pointerleave", () => tip.hidden = true);
     });
-    el("text", { x: W - m.r, y: m.t - 10, class: "tick", "text-anchor": "end", text: "BARS: MEAN TENSION · BELOW: SHARE OF TIME" }, svg);
+    el("text", { x: W - m.r, y: m.t - 10, class: "tick", "text-anchor": "end", text: "BARS: MEAN TENSION \u00b7 BELOW: SHARE OF TIME" }, svg);
   });
 }
 (function motifs() {
@@ -831,7 +833,7 @@ function voicesBars(host, mode) {
     const N = D.modes[mode].motifs.novelty;
     lineChart($(id), {
       x: NOFF, xDomain: [-5, 10], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 180, title: `${ML[mode]} (n = ${N.fresh.n} first or second, ${N.familiar.n} later)`,
-      xTicks: [-5, 0, 5, 10], xFmt: v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v) + " s", tipX: v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} s from the motif's start`,
+      xTicks: [-5, 0, 5, 10], xFmt: v => (v > 0 ? "+" : v < 0 ? "\u2212" : "") + Math.abs(v) + " s", tipX: v => `${v > 0 ? "+" : v < 0 ? "\u2212" : ""}${Math.abs(v).toFixed(1)} s from the motif's start`,
       series: [{ label: "First or second hearing", values: N.fresh.T, color: "--tension", width: 2.2 }, { label: "Fourth or later", values: N.familiar.T, color: "--ink-2", width: 2 }],
       markers: [{ x: 0, kind: "zero" }], aria: `Tension around a motif's start, ${ML[mode]}`
     });
@@ -840,7 +842,7 @@ function voicesBars(host, mode) {
   const rowsF = [];
   for (let ti = 0; ti < 4; ti++) for (const [mode, Mm] of [["checkpoint", Mc], ["permadeath", Mp]]) {
     const st = Mm.stats[ti];
-    rowsF.push(`<tr><td>${MOTIF[ti]} ${MOTIF_NAME[ti]}</td><td>${ML[mode]}</td><td class="n">${st.per10.toFixed(0)}</td><td class="n">${st.firstHeard != null ? mmss(st.firstHeard) : "–"}</td><td class="n">${st.medianGap != null ? st.medianGap.toFixed(1) + " s" : "–"}</td><td class="n">${pct(st.variedShare)}</td><td class="n">${pct(st.combinedShare)}</td><td class="n">${f2(st.hitsPerAppearance)}</td></tr>`);
+    rowsF.push(`<tr><td>${MOTIF[ti]} ${MOTIF_NAME[ti]}</td><td>${ML[mode]}</td><td class="n">${st.per10.toFixed(0)}</td><td class="n">${st.firstHeard != null ? mmss(st.firstHeard) : "\u2013"}</td><td class="n">${st.medianGap != null ? st.medianGap.toFixed(1) + " s" : "\u2013"}</td><td class="n">${pct(st.variedShare)}</td><td class="n">${pct(st.combinedShare)}</td><td class="n">${f2(st.hitsPerAppearance)}</td></tr>`);
   }
   $("freq-table").innerHTML = `<thead><tr><th>Motif</th><th>Death rule</th><th class="n">Per 10 min</th><th class="n">First heard</th><th class="n">Median gap</th><th class="n">Varied</th><th class="n">Layered</th><th class="n">Hits per appearance</th></tr></thead><tbody>${rowsF.join("")}</tbody>` +
     `<tfoot><tr><td colspan="8" class="caption" style="white-space: normal; border: 0; padding-top: 10px">First heard is in session 1. The median gap is between appearances of the same motif. Layered means it started alongside another motif. The motif sequence carries ${Mc.sequence.condEntropy.toFixed(2)} bits of uncertainty per motif with checkpoints and ${Mp.sequence.condEntropy.toFixed(2)} with permadeath, out of a possible 2.</td></tr></tfoot>`;
@@ -862,7 +864,7 @@ function voicesBars(host, mode) {
     aria: "Mean pattern surprise by motif number, structured against random composition"
   });
   const NOFF2 = Array.from({ length: 151 }, (_, i) => (i - 50) / 10);
-  const vfmt = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v) + " s";
+  const vfmt = v => (v > 0 ? "+" : v < 0 ? "\u2212" : "") + Math.abs(v) + " s";
   lineChart($("viol-x"), {
     x: NOFF2, xDomain: [-5, 10], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 180, title: `Pattern surprise trace (n = ${Vc.broken.n} broken, ${Vc.kept.n} kept)`,
     xTicks: [-5, 0, 5, 10], xFmt: vfmt, tipX: v => `${vfmt(+v.toFixed(1))} from the motif's start`,
@@ -877,10 +879,10 @@ function voicesBars(host, mode) {
   });
   $("struct-table").innerHTML = `<thead><tr><th></th><th class="n">Structured, checkpoints</th><th class="n">Structured, permadeath</th><th class="n">Random order, checkpoints</th></tr></thead><tbody>` +
     `<tr><td>Uncertainty of the next motif (bits, of 2)</td><td class="n">${Mc.sequence.condEntropy.toFixed(2)}</td><td class="n">${Mp.sequence.condEntropy.toFixed(2)}</td><td class="n">${R.sequence.condEntropy.toFixed(2)}</td></tr>` +
-    `<tr><td>Pattern surprise, first 3 minutes → after (bits)</td><td class="n">${Mc.sequence.surprisalEarly.toFixed(2)} → ${Mc.sequence.surprisalLate.toFixed(2)}</td><td class="n">${Mp.sequence.surprisalEarly.toFixed(2)} → ${Mp.sequence.surprisalLate.toFixed(2)}</td><td class="n">${R.sequence.surprisalEarly.toFixed(2)} → ${R.sequence.surprisalLate.toFixed(2)}</td></tr>` +
-    `<tr><td>Surprise of a kept / broken pattern (bits)</td><td class="n">${Vc.keptBits.toFixed(1)} / ${Vc.brokenBits.toFixed(1)}</td><td class="n">${Vp.keptBits.toFixed(1)} / ${Vp.brokenBits.toFixed(1)}</td><td class="n">–</td></tr>` +
-    `<tr><td>Surprise of the motif after a broken pattern (bits)</td><td class="n">${Vc.nextBits.toFixed(1)}</td><td class="n">${Vp.nextBits.toFixed(1)}</td><td class="n">–</td></tr>` +
-    `<tr><td>Hits per appearance, kept / broken</td><td class="n">${f2(Vc.keptHits)} / ${f2(Vc.brokenHits)}</td><td class="n">${f2(Vp.keptHits)} / ${f2(Vp.brokenHits)}</td><td class="n">–</td></tr>` +
+    `<tr><td>Pattern surprise, first 3 minutes \u2192 after (bits)</td><td class="n">${Mc.sequence.surprisalEarly.toFixed(2)} \u2192 ${Mc.sequence.surprisalLate.toFixed(2)}</td><td class="n">${Mp.sequence.surprisalEarly.toFixed(2)} \u2192 ${Mp.sequence.surprisalLate.toFixed(2)}</td><td class="n">${R.sequence.surprisalEarly.toFixed(2)} \u2192 ${R.sequence.surprisalLate.toFixed(2)}</td></tr>` +
+    `<tr><td>Surprise of a kept / broken pattern (bits)</td><td class="n">${Vc.keptBits.toFixed(1)} / ${Vc.brokenBits.toFixed(1)}</td><td class="n">${Vp.keptBits.toFixed(1)} / ${Vp.brokenBits.toFixed(1)}</td><td class="n">\u2013</td></tr>` +
+    `<tr><td>Surprise of the motif after a broken pattern (bits)</td><td class="n">${Vc.nextBits.toFixed(1)}</td><td class="n">${Vp.nextBits.toFixed(1)}</td><td class="n">\u2013</td></tr>` +
+    `<tr><td>Hits per appearance, kept / broken</td><td class="n">${f2(Vc.keptHits)} / ${f2(Vc.brokenHits)}</td><td class="n">${f2(Vp.keptHits)} / ${f2(Vp.brokenHits)}</td><td class="n">\u2013</td></tr>` +
     `<tr><td>Mean tension</td><td class="n">${f2(S.checkpoint.meanT)}</td><td class="n">${f2(S.permadeath.meanT)}</td><td class="n">${f2(R.meanT)}</td></tr>` +
     `<tr><td>Repeating tension cycle</td><td class="n">${S.checkpoint.cycle ? S.checkpoint.cycle.lag + " s" : "none found"}</td><td class="n">${S.permadeath.cycle ? S.permadeath.cycle.lag + " s" : "none found"}</td><td class="n">${R.cycle ? R.cycle.lag + " s" : "none found"}</td></tr></tbody>`;
   $("f-struct1").innerHTML = `Structure makes the game learnable. The next motif carries <b>${Mc.sequence.condEntropy.toFixed(2)} bits</b> of uncertainty with structured composition (checkpoints) against <b>${R.sequence.condEntropy.toFixed(2)}</b> in random order. The expectation model's surprise sits below random order for most of the session, rising back to it while a new form is being learned, then falling well below once the form is familiar. It falls further with permadeath (${Mp.sequence.surprisalEarly.toFixed(1)} to ${Mp.sequence.surprisalLate.toFixed(1)} bits) than with checkpoints (${Mc.sequence.surprisalEarly.toFixed(1)} to ${Mc.sequence.surprisalLate.toFixed(1)}), where new forms keep arriving and deaths replay old zones.`;
@@ -934,7 +936,7 @@ function corrMatrix(mode, id) {
         const r = C.corr[i][j], rgb = divColor(r), lum = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
         const x0 = labW + j * cell, y0 = top + i * cell;
         el("rect", { x: x0 + 1, y: y0 + 1, width: cell - 2, height: cell - 2, rx: 3, fill: `rgb(${rgb.join(",")})` }, svg);
-        if (cell >= 28) el("text", { x: x0 + cell / 2, y: y0 + cell / 2, class: "cell-txt", fill: lum > 0.55 ? "#1a1f33" : "#ffffff", text: r.toFixed(2).replace("0.", ".").replace("-.", "−.") }, svg);
+        if (cell >= 28) el("text", { x: x0 + cell / 2, y: y0 + cell / 2, class: "cell-txt", fill: lum > 0.55 ? "#1a1f33" : "#ffffff", text: r.toFixed(2).replace("0.", ".").replace("-.", "\u2212.") }, svg);
         const hr = el("rect", { x: x0, y: y0, width: cell, height: cell, class: "hit" }, svg);
         hr.addEventListener("pointerenter", () => {
           tip.innerHTML = `<div class="th">Correlation</div><div class="row"><span>${CK[a]} &times; ${CK[b]}</span><span class="v">${r.toFixed(2)}</span></div>`;
@@ -953,7 +955,7 @@ corrMatrix("checkpoint", "corr-cp"); corrMatrix("permadeath", "corr-pd");
     [["ES", "Ely-style suspense"], ["SU", "Ely-style surprise"], ["I4", "Left 4 Dead-style intensity"], ["X", "Pattern surprise (motif expectation)"], ["V", "Motifs playing at once"]].map(([k, l]) => `<tr><td>${l}</td><td class="n">${f2(r(c, k))}</td><td class="n">${f2(r(p, k))}</td><td class="n">${c.lags[k].lag > 0 ? "+" : ""}${c.lags[k].lag.toFixed(1)} s</td><td class="n">${p.lags[k].lag > 0 ? "+" : ""}${p.lags[k].lag.toFixed(1)} s</td></tr>`).join("") +
     `</tbody><tfoot><tr><td colspan="5" class="caption" style="white-space: normal; border: 0; padding-top: 10px">Lag is the shift that best lines the measure up with our tension. A positive lag means the measure rises after ours does.</td></tr></tfoot>`;
   $("f-cmp1").innerHTML = `Our tension is, in practice, <b>Ely-style suspense</b>: the two correlate at <b>${f2(r(c, "ES"))}</b> with checkpoints and <b>${f2(r(p, "ES"))}</b> with permadeath, with no lag. Once stakes and uncertainty are known, multiplying in threat adds little. Our formula rediscovers Ely, Frankel and Kamenica's measure, with a heuristic uncertainty term.`;
-  $("f-cmp2").innerHTML = `The <b>Left 4 Dead-style intensity</b> is a different signal. It correlates only ${f2(r(c, "I4"))} and ${f2(r(p, "I4"))} with our tension and rises about <b>${Math.abs(c.lags.I4.lag).toFixed(1)}–${Math.abs(p.lags.I4.lag).toFixed(1)} s later</b>, because it reacts to damage, while futures-based measures react to danger. For ${pct(c.aftermathShare)} of checkpoint play and ${pct(p.aftermathShare)} of permadeath play, intensity is high while our tension is low: the aftermath of a hit. Surprise (${f2(r(c, "SU"))} and ${f2(r(p, "SU"))}) marks when the odds changed, not when they were close.`;
+  $("f-cmp2").innerHTML = `The <b>Left 4 Dead-style intensity</b> is a different signal. It correlates only ${f2(r(c, "I4"))} and ${f2(r(p, "I4"))} with our tension and rises about <b>${Math.abs(c.lags.I4.lag).toFixed(1)}\u2013${Math.abs(p.lags.I4.lag).toFixed(1)} s later</b>, because it reacts to damage, while futures-based measures react to danger. For ${pct(c.aftermathShare)} of checkpoint play and ${pct(p.aftermathShare)} of permadeath play, intensity is high while our tension is low: the aftermath of a hit. Surprise (${f2(r(c, "SU"))} and ${f2(r(p, "SU"))}) marks when the odds changed, not when they were close.`;
 })();
 })();
 </script>

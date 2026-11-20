@@ -6,8 +6,8 @@ It has two parts:
 
 - **Tension Score** (`tension-score.html`): two small games that measure themselves while they run, scored with the same notation. A switch at the top picks the game. You can watch a bot or play yourself, and rate your own tension to see which measure tracks you best.
   - **Arena**: a dodging game. Collect sparks, reach the gate, and avoid enemies that arrive in four motifs.
-  - **Zedris**: an original falling-block game with its own five pieces (Duo, Bar, Hook, Zed, Cross), a 9 x 18 well, and a row with one gap that rises from the bottom every 10 pieces. The pieces are the motifs, and the rising rows give the game a regular meter.
-- **Tension Score Analysis** (`tension-score-analysis.html`): what seeded bot sessions of the arena game show when you look at them all at once. Zedris is not in the analysis yet.
+  - **Zedrix**: an original falling-block game with its own five pieces (Duo, Bar, Hook, Zed, Cross), a 9 x 18 well, and a row with one gap that rises from the bottom every 10 pieces. The pieces are the motifs, and the rising rows give the game a regular meter.
+- **Tension Score Analysis** (`tension-score-analysis.html`): what seeded bot sessions of the arena game show when you look at them all at once. Zedrix is not in the analysis yet.
 
 Both are single HTML files with no dependencies beyond Google Fonts.
 
@@ -38,9 +38,9 @@ Enemies arrive as four **motifs**: A Pincer, B Crossfire, C Stream and D Ring. W
 
 For comparison, the game also computes Ely-style suspense and surprise, a Left 4 Dead-style intensity, and the number of motifs playing at once.
 
-In **Zedris** the same measures apply with game-specific inputs:
+In **Zedrix** the same measures apply with game-specific inputs:
 
-| Measure | In Zedris |
+| Measure | In Zedrix |
 |---|---|
 | **Progress** | Level plus rows cleared out of 8. |
 | **Threat** | Stack height, covered holes and unevenness. |
