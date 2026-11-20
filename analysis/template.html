@@ -1,0 +1,959 @@
+<title>Tension Score Analysis</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+/* Layout: a research notebook beside the Tension Score page. One column of findings, each followed by its charts and a table view. */
+:root {
+  --paper: #f0f1f5;
+  --surface: #fafbfd;
+  --ink: #1a1f33;
+  --ink-2: #565d77;
+  --ink-3: #868ca3;
+  --rule: #d5d8e2;
+  --grid: #e3e5ec;
+  --prog: #008a7c;
+  --tension: #c3215c;
+  --threat: #b46100;
+  --unc: #5944bf;
+  --stakes: #2c6cb3;
+  --danger: #b2281f;
+  --div-neg: #2a78d6;
+  --div-mid: #eceef3;
+  --div-pos: #e34948;
+  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --ink-3: #7a8098; --rule: #2b2f3e; --grid: #23273350;
+    --prog: #1aa597; --tension: #e5457d; --threat: #c77a12; --unc: #8b74ee; --stakes: #4a8ddb; --danger: #ff6a5c;
+    --div-neg: #3987e5; --div-mid: #2c303d; --div-pos: #e66767;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --ink-3: #7a8098; --rule: #2b2f3e; --grid: #23273350;
+  --prog: #1aa597; --tension: #e5457d; --threat: #c77a12; --unc: #8b74ee; --stakes: #4a8ddb; --danger: #ff6a5c;
+  --div-neg: #3987e5; --div-mid: #2c303d; --div-pos: #e66767;
+  color-scheme: dark;
+}
+html, body { background: var(--paper); color: var(--ink); }
+body { font-family: var(--body); font-size: 15px; line-height: 1.55; }
+.page {
+  max-width: 1080px; margin: 0 auto;
+  padding-block: 32px 80px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 56px;
+}
+.eyebrow, .label, th, .legend, .ctl-label { font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+header { display: grid; gap: 8px; }
+h1 { font-family: var(--display); font-weight: 400; font-size: clamp(42px, 7vw, 72px); line-height: .95; margin: 2px 0 6px; text-wrap: balance; }
+h1 em { color: var(--tension); }
+h2 { font-family: var(--display); font-weight: 400; font-size: clamp(28px, 4vw, 38px); line-height: 1.05; margin: 0; text-wrap: balance; }
+h3 { font-size: 14px; font-weight: 600; margin: 0; }
+p { margin: 0; max-width: 68ch; }
+.lede { font-size: 16.5px; color: var(--ink-2); }
+.lede a, p a { color: var(--ink); }
+section { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.finding { font-size: 16px; }
+.finding b { font-weight: 600; }
+.caption { font-size: 13.5px; color: var(--ink-2); }
+.num { font-family: var(--mono); font-size: .92em; font-variant-numeric: tabular-nums; }
+
+.card { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 14px 14px 10px; min-width: 0; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.grid4 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 760px) { .grid2, .grid4 { grid-template-columns: minmax(0, 1fr); } }
+.panel-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin: 0 0 4px; }
+.panel-head .label { white-space: nowrap; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; text-transform: none; letter-spacing: .02em; font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+.legend i.area { height: 10px; opacity: .25; }
+.legend i.tick { width: 2px; height: 12px; }
+.legend i.ramp { width: 120px; height: 10px; border-radius: 3px; }
+
+.chart { position: relative; width: 100%; }
+.chart svg { display: block; overflow: visible; }
+.chart canvas { display: block; width: 100%; }
+.ctitle { font: 600 12px var(--body); fill: var(--ink); }
+.tick { font: 400 10.5px var(--mono); fill: var(--ink-3); font-variant-numeric: tabular-nums; }
+.ytick { text-anchor: end; dominant-baseline: middle; }
+.xtick { text-anchor: middle; }
+.grid { stroke: var(--grid); stroke-width: 1; }
+.axis { stroke: var(--rule); stroke-width: 1; }
+.line { fill: none; stroke-linejoin: round; stroke-linecap: round; }
+.band { fill: var(--ink-3); opacity: .12; }
+.bandlbl { font: italic 12px var(--display); fill: var(--ink-2); }
+.mk { stroke: var(--ink-2); stroke-width: 1; opacity: .7; }
+.mk.death { stroke: var(--danger); stroke-width: 2; opacity: 1; }
+.mk.hit { stroke: var(--danger); stroke-width: 1.5; opacity: .8; }
+.mk.zero { stroke: var(--ink); stroke-width: 1; opacity: .5; }
+.mklbl { font: 500 10px var(--mono); fill: var(--ink-2); letter-spacing: .04em; }
+.mklbl.death { fill: var(--danger); }
+.cross { stroke: var(--ink); stroke-width: 1; opacity: .35; }
+.hdot { stroke: var(--surface); stroke-width: 2; }
+.hit { fill: transparent; cursor: crosshair; }
+.hit:focus { outline: none; }
+.hit:focus-visible { stroke: var(--unc); stroke-width: 2; }
+.anno { font: italic 13px var(--display); fill: var(--ink-3); }
+.cell-txt { font: 500 10.5px var(--mono); text-anchor: middle; dominant-baseline: middle; }
+.tip {
+  position: absolute; z-index: 5; pointer-events: none; min-width: 140px; max-width: 220px;
+  background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px;
+  padding: 7px 9px; font-size: 12px; line-height: 1.45; box-shadow: 0 4px 16px rgba(10, 14, 30, .12);
+}
+.tip .th { font-family: var(--mono); font-size: 10.5px; color: var(--ink-2); margin-bottom: 3px; letter-spacing: .04em; }
+.tip .row { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip .row span:first-child { display: inline-flex; align-items: center; gap: 6px; }
+.tip i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.tip .v { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+td.n, th.n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+th { font-weight: 500; }
+tbody tr:last-child td { border-bottom: 0; }
+details { font-size: 13.5px; }
+details summary { cursor: pointer; color: var(--ink-2); font-family: var(--mono); font-size: 11.5px; letter-spacing: .06em; text-transform: uppercase; width: fit-content; }
+details[open] summary { margin-bottom: 10px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button { font: 500 13px/1 var(--body); color: var(--ink-2); background: transparent; border: 0; padding: 8px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--rule); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.seg button:focus-visible { outline: 2px solid var(--unc); outline-offset: 2px; }
+.ctl { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.method { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px 32px; }
+.method p { font-size: 14px; color: var(--ink-2); }
+code { font-family: var(--mono); font-size: .9em; }
+.refs { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 8px 36px; }
+.refs h3 { margin: 14px 0 6px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.refs ol { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 9px; }
+.refs li { font-size: 13.5px; line-height: 1.45; max-width: 62ch; }
+.refs li .use { display: block; color: var(--ink-2); font-size: 12.5px; }
+pre { font-family: var(--mono); font-size: 12.5px; background: var(--surface); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 6px 0 0; }
+</style>
+
+<div class="page">
+  <header>
+    <p class="eyebrow">Game analysis theory &middot; arena game &middot; 6 bot sessions</p>
+    <h1>Tension Score <em>Analysis</em></h1>
+    <p class="lede">What the arena game's measurements show when you look at them all at once. The data comes from six seeded 10-minute sessions played by the bot, three with checkpoints and three with permadeath, sampled 10 times a second. It is bot play, so it describes the game and the model, not how a person felt. The live game is <a href="https://claude.ai/artifact/2gGbnXZDqvGNfo3MqqSHhy">Tension Score</a>.</p>
+  </header>
+
+  <section aria-labelledby="sum-h">
+    <h2 id="sum-h">The two death rules side by side</h2>
+    <p class="finding" id="f-summary"></p>
+    <div class="card tablewrap"><table id="summary-table"></table></div>
+  </section>
+
+  <section aria-labelledby="score-h">
+    <h2 id="score-h">Two scores</h2>
+    <p class="caption">Two minutes from each death rule, ending 30 seconds after a death. The top lane is progress, with zones as staff lines. The bottom lane is tension with its three parts. Shaded spans are suspensions, thin lines are gates, a double line is a safe point, and red marks a death. Hover or use the arrow keys for values.</p>
+    <div class="legend">
+      <span><i style="background: var(--prog)"></i>Progress</span>
+      <span><i class="area" style="background: var(--tension)"></i>Tension</span>
+      <span><i style="background: var(--stakes)"></i>Stakes</span>
+      <span><i style="background: var(--threat)"></i>Threat</span>
+      <span><i style="background: var(--unc)"></i>Uncertainty</span>
+      <span><i class="tick" style="background: var(--danger)"></i>Hit or death</span>
+    </div>
+    <div class="grid2">
+      <div class="card"><div class="panel-head"><h3>Checkpoints</h3><span class="label" id="ex-cp-lbl"></span></div><div id="ex-cp-p"></div><div id="ex-cp-t"></div></div>
+      <div class="card"><div class="panel-head"><h3>Permadeath</h3><span class="label" id="ex-pd-lbl"></span></div><div id="ex-pd-p"></div><div id="ex-pd-t"></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="lock-h">
+    <h2 id="lock-h">What a cadence and a fall look like</h2>
+    <p class="finding" id="f-locked"></p>
+    <p class="caption">Each panel averages every occurrence of one event, from 10 seconds before to 10 seconds after. The pale band around tension spans its middle half (25th to 75th percentile).</p>
+    <div class="legend">
+      <span><i style="background: var(--tension)"></i>Tension</span>
+      <span><i style="background: var(--stakes)"></i>Stakes</span>
+      <span><i style="background: var(--threat)"></i>Threat</span>
+      <span><i style="background: var(--unc)"></i>Uncertainty</span>
+    </div>
+    <div class="grid4" id="locked-grid"></div>
+    <details><summary>Show numbers</summary><div class="tablewrap"><table id="locked-table"></table></div></details>
+  </section>
+
+  <section aria-labelledby="phase-h">
+    <h2 id="phase-h">Tension space</h2>
+    <p class="finding" id="f-phase"></p>
+    <p class="caption">Every dot is a moment of play, placed by its threat and uncertainty and coloured by its stakes. The dark trail in the checkpoint panel is the 25 seconds before one death.</p>
+    <div class="legend"><span>Stakes&nbsp; 0</span><span><i class="ramp" id="ramp-swatch"></i></span><span>1</span></div>
+    <div class="grid2">
+      <div class="card"><div class="panel-head"><h3>Checkpoints</h3></div><div id="ph-cp"></div></div>
+      <div class="card"><div class="panel-head"><h3>Permadeath</h3></div><div id="ph-pd"></div></div>
+    </div>
+    <details><summary>Show numbers</summary><div class="tablewrap"><table id="phase-table"></table></div></details>
+  </section>
+
+  <section aria-labelledby="dist-h">
+    <h2 id="dist-h">Same game, different stakes</h2>
+    <p class="finding" id="f-dist"></p>
+    <p class="caption">Share of time spent at each level. Bars above the line are checkpoint play and bars below are permadeath.</p>
+    <div class="grid4" id="hist-grid"></div>
+    <div class="grid2">
+      <div class="card"><div class="panel-head"><h3>Stakes over one checkpoint session</h3></div><div id="run-cp"></div></div>
+      <div class="card"><div class="panel-head"><h3>Stakes over one permadeath session</h3></div><div id="run-pd"></div></div>
+    </div>
+    <details><summary>Show numbers</summary><div class="tablewrap"><table id="hist-table"></table></div></details>
+  </section>
+
+  <section aria-labelledby="acf-h">
+    <h2 id="acf-h">Is there a meter?</h2>
+    <p class="finding" id="f-acf"></p>
+    <p class="caption">Autocorrelation of tension: how similar tension is to itself a given number of seconds later, averaged over the three sessions. A repeating cycle would show as a second hump.</p>
+    <div class="grid2">
+      <div class="card"><div id="acf-cp"></div></div>
+      <div class="card"><div id="acf-pd"></div></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="mot-h">
+    <h2 id="mot-h">Motifs: establishment, frequency and concurrency</h2>
+    <p class="finding" id="f-mot1"></p>
+    <p class="caption">Enemies arrive as four motifs: A Pincer, B Crossfire, C Stream and D Ring. Each row below is a voice. A bar spans the time a motif is playing, the tick at its start is as tall as the surprise a learning model felt, &prime; marks a variation, and &ldquo;new&rdquo; marks a first hearing. Hover a bar for details.</p>
+    <div class="grid2">
+      <div class="card"><div class="panel-head"><h3>Checkpoints</h3><span class="label">same 2 minutes as above</span></div><div id="roll-cp"></div></div>
+      <div class="card"><div class="panel-head"><h3>Permadeath</h3><span class="label">same 2 minutes as above</span></div><div id="roll-pd"></div></div>
+    </div>
+    <h3>Concurrency: tension by the number of motifs playing at once</h3>
+    <p class="finding" id="f-mot2"></p>
+    <div class="grid2">
+      <div class="card"><div id="vb-cp"></div></div>
+      <div class="card"><div id="vb-pd"></div></div>
+    </div>
+    <h3>Establishment: tension on each motif's 1st, 2nd, 3rd&hellip; appearance</h3>
+    <p class="finding" id="f-mot3"></p>
+    <div class="legend">
+      <span><i style="background: var(--tension)"></i>Checkpoints</span>
+      <span><i style="background: var(--ink-2)"></i>Permadeath</span>
+    </div>
+    <div class="grid4" id="est-grid"></div>
+    <h3>Novelty: tension around a motif's start</h3>
+    <p class="finding" id="f-mot4"></p>
+    <div class="legend">
+      <span><i style="background: var(--tension)"></i>First or second hearing</span>
+      <span><i style="background: var(--ink-2)"></i>Fourth hearing or later</span>
+    </div>
+    <div class="grid2">
+      <div class="card"><div id="nov-cp"></div></div>
+      <div class="card"><div id="nov-pd"></div></div>
+    </div>
+    <h3>Frequency</h3>
+    <div class="card tablewrap"><table id="freq-table"></table></div>
+    <h3>Structure: a composition the player can learn</h3>
+    <p class="finding" id="f-struct1"></p>
+    <p class="caption">With structured composition, motifs follow a repeating phrase form that grows as motifs are unlocked: AAAA, AABA (song form), ABAC, then ABACABAD (rondo). The last slot of each phrase layers two motifs like a cadence, and once a form has been heard twice, each slot has a 12% chance of being swapped for an unexpected motif: a broken pattern, marked ! in the piano rolls above. The expectation model remembers the last three motifs, so it can learn these forms. The comparison runs the same game with motifs in random order (three checkpoint sessions, seeds 31 to 33).</p>
+    <div class="legend">
+      <span><i style="background: var(--tension)"></i>Structured</span>
+      <span><i style="background: var(--ink-2)"></i>Random order</span>
+    </div>
+    <div class="card"><div id="curve-chart"></div></div>
+    <p class="finding" id="f-struct2"></p>
+    <div class="legend">
+      <span><i style="background: var(--tension)"></i>Broken pattern</span>
+      <span><i style="background: var(--ink-2)"></i>Kept pattern</span>
+    </div>
+    <div class="grid2">
+      <div class="card"><div id="viol-x"></div></div>
+      <div class="card"><div id="viol-t"></div></div>
+    </div>
+    <div class="card tablewrap"><table id="struct-table"></table></div>
+  </section>
+
+  <section aria-labelledby="cmp-h">
+    <h2 id="cmp-h">Our formula against established measures</h2>
+    <p class="finding" id="f-cmp1"></p>
+    <p class="finding" id="f-cmp2"></p>
+    <div class="ctl"><span class="ctl-label">Excerpt</span>
+      <div class="seg" role="group" aria-label="Which excerpt to compare">
+        <button id="cmp-cp" aria-pressed="true">Checkpoints</button>
+        <button id="cmp-pd" aria-pressed="false">Permadeath</button>
+      </div>
+    </div>
+    <div class="card" id="cmp-stack"></div>
+    <p class="caption">Ely-style suspense is stakes times the spread of the next update to the odds of avoiding a hit. Surprise is stakes times how far those odds moved in the last second. The Left 4 Dead-style intensity jumps on each hit, builds while enemies are close and decays over time. The Leverage Index is Ely suspense divided by its average, so it has the same shape and is not drawn separately.</p>
+    <div class="grid2">
+      <div class="card"><div class="panel-head"><h3>Correlations, checkpoints</h3></div><div id="corr-cp"></div></div>
+      <div class="card"><div class="panel-head"><h3>Correlations, permadeath</h3></div><div id="corr-pd"></div></div>
+    </div>
+    <div class="card tablewrap"><table id="lag-table"></table></div>
+  </section>
+
+  <section aria-labelledby="meth-h">
+    <h2 id="meth-h">What this does and does not show</h2>
+    <div class="method">
+      <div><h3>It shows the model working as designed</h3><p>Stakes, threat and uncertainty behave the way the theory predicts: the death rule reshapes stakes, gates resolve tension, and the futures-based uncertainty sees danger before damage lands.</p></div>
+      <div><h3>It does not show what anyone felt</h3><p>The player is a bot. Whether any of these curves matches felt tension is the open question. The next step is to play Tension Score while rating your own tension, then see which curve tracks you best.</p></div>
+      <div><h3>Motif effects are confounded in bot play</h3><p>Later motif appearances come in harder zones with more layering, and the bot never learns. So the bot data can show how motifs are scheduled and how layering raises tension, but not whether familiarity lowers it. That needs a person's ratings, compared within the same zone.</p></div>
+      <div><h3>The weights are first guesses</h3><p>Threat's 0.4/0.6 split, the stakes scale, the 3-second futures and the intensity rates were chosen once and never tuned. Uncertainty from 24 futures also carries sampling noise of about &plusmn;0.1 in the odds, which inflates surprise.</p></div>
+      <div><h3>Reproduce it</h3><p>From the GameNotation folder, run the sessions and rebuild this page:</p><pre>node tools/arena-analysis.js 600
+node tools/build-analysis.js</pre></div>
+    </div>
+  </section>
+  <section aria-labelledby="refs-h">
+    <h2 id="refs-h">References</h2>
+    <p class="caption">Works this analysis and the framework behind it draw on, with what each was used for. Entries give author, year, title and where the work appeared.</p>
+    <div class="refs">
+      <div>
+        <h3>Tension and suspense</h3>
+        <ol>
+          <li>Ely, J., Frankel, A., &amp; Kamenica, E. (2015). Suspense and surprise. <i>Journal of Political Economy</i>.<span class="use">Ely-style suspense and surprise; the measure our tension formula turned out to match.</span></li>
+          <li>Tango, T. M., Lichtman, M. G., &amp; Dolphin, A. E. (2007). <i>The Book: Playing the Percentages in Baseball</i>. Potomac Books.<span class="use">The Leverage Index.</span></li>
+          <li>Booth, M. (2009). <i>The AI Systems of Left 4 Dead</i>. Keynote, Artificial Intelligence and Interactive Digital Entertainment conference (AIIDE).<span class="use">The AI Director's player-intensity measure, the basis of the Left 4 Dead-style intensity.</span></li>
+          <li>Gerrig, R. J., &amp; Bernardo, A. B. I. (1994). Readers as problem-solvers in the experience of suspense. <i>Poetics</i>.<span class="use">Suspense as a shrinking number of paths to success.</span></li>
+          <li>Cheong, Y.-G., &amp; Young, R. M. (2008). Narrative generation for suspense: Modeling and evaluation. <i>Interactive Storytelling (ICIDS 2008)</i>, Springer.<span class="use">Computational suspense in narrative.</span></li>
+          <li>O&rsquo;Neill, B., &amp; Riedl, M. (2014). Dramatis: A computational model of suspense. <i>Proceedings of AAAI 2014</i>.<span class="use">Computational suspense in narrative.</span></li>
+          <li>Lerdahl, F. (2001). <i>Tonal Pitch Space</i>. Oxford University Press.<span class="use">Tension as distance from a tonal home; the model for progress as distance from the start.</span></li>
+          <li>Lerdahl, F., &amp; Krumhansl, C. L. (2007). Modeling tonal tension. <i>Music Perception</i>.<span class="use">A tested quantitative model of musical tension.</span></li>
+        </ol>
+        <h3>Expectation, patterns and attention</h3>
+        <ol>
+          <li>Meyer, L. B. (1956). <i>Emotion and Meaning in Music</i>. University of Chicago Press.<span class="use">Emotion from expectations being set up, confirmed or broken.</span></li>
+          <li>Huron, D. (2006). <i>Sweet Anticipation: Music and the Psychology of Expectation</i>. MIT Press.<span class="use">Expectation and surprise as measurable responses; the basis of pattern surprise.</span></li>
+          <li>Berlyne, D. E. (1971). <i>Aesthetics and Psychobiology</i>. Appleton-Century-Crofts.<span class="use">The inverted-U relation between novelty and interest.</span></li>
+          <li>Cowan, N. (2001). The magical number 4 in short-term memory: A reconsideration of mental storage capacity. <i>Behavioral and Brain Sciences</i>.<span class="use">The limit of about four items, relevant to tension levelling off at three to four voices.</span></li>
+          <li>Cleary, J. G., &amp; Witten, I. H. (1984). Data compression using adaptive coding and partial string matching. <i>IEEE Transactions on Communications</i>.<span class="use">Prediction by partial matching: the back-off idea in the expectation model.</span></li>
+          <li>Krichevsky, R. E., &amp; Trofimov, V. K. (1981). The performance of universal encoding. <i>IEEE Transactions on Information Theory</i>.<span class="use">The KT estimator at the base of the expectation model.</span></li>
+          <li>Lopes, P., Yannakakis, G. N., &amp; Liapis, A. (2017). RankTrace: Relative and unbounded affect annotation. <i>Proceedings of Affective Computing and Intelligent Interaction (ACII 2017)</i>.<span class="use">Relative, continuous rating, as used in Tension Score's rating mode.</span></li>
+        </ol>
+        <h3>Computation and analytics</h3>
+        <ol>
+          <li>Browne, C. (2008). <i>Automatic Generation and Evaluation of Recombination Games</i>. PhD thesis, Queensland University of Technology.<span class="use">Ludi: game quality measures (uncertainty, drama, lead changes) from simulated play.</span></li>
+          <li>Piette, &Eacute;., Soemers, D. J. N. J., Stephenson, M., Sironi, C. F., Winands, M. H. M., &amp; Browne, C. (2020). Ludii: The ludemic general game system. <i>Proceedings of ECAI 2020</i>.<span class="use">Ludemes and the reconstruction of ancient games.</span></li>
+          <li>Schmidhuber, J. (2010). Formal theory of creativity, fun, and intrinsic motivation (1990&ndash;2010). <i>IEEE Transactions on Autonomous Mental Development</i>.<span class="use">Fun as compression progress.</span></li>
+          <li>Yannakakis, G. N., &amp; Togelius, J. (2018). <i>Artificial Intelligence and Games</i>. Springer.<span class="use">Player modelling and experience-driven content.</span></li>
+          <li>Shaker, N., Togelius, J., &amp; Nelson, M. J. (2016). <i>Procedural Content Generation in Games</i>. Springer.<span class="use">Generating game content from design rules.</span></li>
+          <li>Seif El-Nasr, M., Drachen, A., &amp; Canossa, A. (Eds.). (2013). <i>Game Analytics: Maximizing the Value of Player Data</i>. Springer.<span class="use">Measuring play from logs.</span></li>
+        </ol>
+      </div>
+      <div>
+        <h3>Play, fun and game design</h3>
+        <ol>
+          <li>Huizinga, J. (1938). <i>Homo Ludens</i>. English translation 1949, Routledge &amp; Kegan Paul.<span class="use">The &ldquo;magic circle&rdquo; of play.</span></li>
+          <li>Bateson, G. (1955). A theory of play and fantasy. <i>Psychiatric Research Reports</i>.<span class="use">The &ldquo;this is play&rdquo; signal.</span></li>
+          <li>Caillois, R. (1958). <i>Les jeux et les hommes</i>. English: <i>Man, Play and Games</i> (1961), Free Press.<span class="use">Competition, chance, make-believe and vertigo.</span></li>
+          <li>Suits, B. (1978). <i>The Grasshopper: Games, Life and Utopia</i>. University of Toronto Press.<span class="use">Games as voluntary attempts to overcome unnecessary obstacles; the lusory attitude.</span></li>
+          <li>Koster, R. (2004). <i>A Theory of Fun for Game Design</i>. Paraglyph Press.<span class="use">Fun as learning patterns.</span></li>
+          <li>Hunicke, R., LeBlanc, M., &amp; Zubek, R. (2004). MDA: A formal approach to game design and game research. <i>AAAI Workshop on Challenges in Game AI</i>.<span class="use">Mechanics, dynamics and aesthetics; the eight kinds of fun.</span></li>
+          <li>Lazzaro, N. (2004). <i>Why We Play Games: Four Keys to More Emotion Without Story</i>. XEODesign.<span class="use">Hard, easy, serious and people fun.</span></li>
+          <li>Csikszentmihalyi, M. (1990). <i>Flow: The Psychology of Optimal Experience</i>. Harper &amp; Row.<span class="use">Challenge matched to skill.</span></li>
+          <li>Ryan, R. M., Rigby, C. S., &amp; Przybylski, A. (2006). The motivational pull of video games: A self-determination theory approach. <i>Motivation and Emotion</i>.<span class="use">The PENS questionnaire.</span></li>
+          <li>Juul, J. (2005). <i>Half-Real: Video Games between Real Rules and Fictional Worlds</i>. MIT Press.<span class="use">Real rules and imagined fiction; play time and event time.</span></li>
+          <li>Schell, J. (2008). <i>The Art of Game Design: A Book of Lenses</i>. Morgan Kaufmann.<span class="use">Interest curves and design lenses.</span></li>
+          <li>Swink, S. (2008). <i>Game Feel: A Game Designer&rsquo;s Guide to Virtual Sensation</i>. Morgan Kaufmann.<span class="use">Game feel as the physics layer.</span></li>
+          <li>Church, D. (1999). Formal abstract design tools. <i>Game Developer</i> magazine.<span class="use">The call for a shared design vocabulary.</span></li>
+          <li>Cook, D. (2007). The chemistry of game design. <i>Gamasutra</i>.<span class="use">Skill atoms and skill chains.</span></li>
+          <li>Bj&ouml;rk, S., &amp; Holopainen, J. (2005). <i>Patterns in Game Design</i>. Charles River Media.<span class="use">A catalogue of game design patterns.</span></li>
+          <li>Adams, E., &amp; Dormans, J. (2012). <i>Game Mechanics: Advanced Game Design</i>. New Riders.<span class="use">Machinations diagrams of internal economies.</span></li>
+          <li>Berlekamp, E. R., Conway, J. H., &amp; Guy, R. K. (1982). <i>Winning Ways for Your Mathematical Plays</i>. Academic Press.<span class="use">Combinatorial game theory.</span></li>
+          <li>Smith, G., Treanor, M., Whitehead, J., &amp; Mateas, M. (2009). Rhythm-based level generation for 2D platformers. <i>Proceedings of Foundations of Digital Games (FDG 2009)</i>.<span class="use">Rhythm groups in level design.</span></li>
+          <li>Hocking, C. (2007). Ludonarrative dissonance in BioShock. <i>Click Nothing</i> (blog).<span class="use">Dissonance between rules and story.</span></li>
+          <li>Hayashida, K. (2012). Interview on the level design of <i>Super Mario 3D Land</i>, <i>Gamasutra</i>.<span class="use">Kish&omacr;tenketsu (introduce, develop, twist, conclude) in level design.</span></li>
+        </ol>
+        <h3>Representation</h3>
+        <ol>
+          <li>Panofsky, E. (1927). <i>Perspective as Symbolic Form</i>. English translation 1991, Zone Books.<span class="use">Projection as a convention, not a neutral view.</span></li>
+          <li>McCloud, S. (1993). <i>Understanding Comics: The Invisible Art</i>. Tundra Publishing.<span class="use">The picture-plane triangle of realistic, iconic and abstract images.</span></li>
+          <li>Tolkien, J. R. R. (1947). On fairy-stories. In <i>Essays Presented to Charles Williams</i>. Oxford University Press.<span class="use">The &ldquo;inner consistency of reality&rdquo; of a secondary world.</span></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script type="application/json" id="data">__DATA__</script>
+<script>
+(() => {
+"use strict";
+const D = JSON.parse(document.getElementById("data").textContent);
+const MODES = ["checkpoint", "permadeath"], ML = { checkpoint: "Checkpoints", permadeath: "Permadeath" };
+const MEAS = {
+  T: { label: "Tension", color: "--tension" }, Sn: { label: "Stakes", color: "--stakes" }, Th: { label: "Threat", color: "--threat" },
+  U: { label: "Uncertainty", color: "--unc" }, P: { label: "Progress", color: "--prog" },
+  ES: { label: "Ely suspense", color: "--ink-2" }, SU: { label: "Ely surprise", color: "--ink-2" }, I4: { label: "L4D intensity", color: "--ink-2" }
+};
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const pct = v => `${Math.round(v * 100)}%`;
+const f2 = v => (+v).toFixed(2);
+const mean = a => a.reduce((x, y) => x + y, 0) / (a.length || 1);
+const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) { if (k === "text") e.textContent = attrs[k]; else e.setAttribute(k, attrs[k]); }
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function scale(d0, d1, r0, r1) { const f = v => r0 + (v - d0) / (d1 - d0) * (r1 - r0); f.inv = p => d0 + (p - r0) / (r1 - r0) * (d1 - d0); return f; }
+function nearest(arr, v) { let lo = 0, hi = arr.length - 1; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < v) lo = m + 1; else hi = m; } if (lo > 0 && Math.abs(arr[lo - 1] - v) < Math.abs(arr[lo] - v)) lo--; return lo; }
+function tipRow(color, label, value) { return `<div class="row"><span><i style="background: var(${color})"></i>${label}</span><span class="v">${value}</span></div>`; }
+
+/* Every chart re-renders on resize and on a theme change. */
+const charts = [];
+function mount(host, render) {
+  const c = { host, render, w: 0 };
+  charts.push(c);
+  render();
+  c.w = host.clientWidth;
+  return c;
+}
+const ro = new ResizeObserver(() => { for (const c of charts) if (c.host.clientWidth && Math.abs(c.host.clientWidth - c.w) > 2) { c.w = c.host.clientWidth; c.render(); } });
+const rerenderAll = () => { for (const c of charts) c.render(); };
+if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", rerenderAll);
+new MutationObserver(rerenderAll).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+/* Line chart with crosshair, tooltip and keyboard stepping. */
+function lineChart(host, o) {
+  const api = { idx: null, show: null };
+  api.set = i => { api.idx = i; if (api.show) api.show(i); if (o.group) for (const g of o.group) if (g !== api) { g.idx = i; if (g.show) g.show(i); } };
+  if (o.group) o.group.push(api);
+  function render() {
+    host.innerHTML = ""; host.classList.add("chart");
+    const W = host.clientWidth || 600, H = o.height || 160;
+    const m = Object.assign({ l: 42, r: 14, t: o.title ? 24 : 8, b: o.noXAxis ? 6 : 24 }, o.margin || {});
+    const svg = el("svg", { width: W, height: H, role: "img", "aria-label": o.aria || o.title || "" }, host);
+    const x = scale(o.xDomain[0], o.xDomain[1], m.l, W - m.r), y = scale(o.yDomain[0], o.yDomain[1], H - m.b, m.t);
+    if (o.title) el("text", { x: m.l, y: 13, class: "ctitle", text: o.title }, svg);
+    for (const v of o.yTicks || []) {
+      el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: v === o.yBase ? "axis" : "grid" }, svg);
+      el("text", { x: m.l - 7, y: y(v), class: "tick ytick", text: (o.yFmt || String)(v) }, svg);
+    }
+    if (!o.noXAxis) for (const v of o.xTicks || []) el("text", { x: x(v), y: H - 7, class: "tick xtick", text: (o.xFmt || String)(v) }, svg);
+    for (const b of o.bands || []) {
+      el("rect", { x: x(b.x0), y: m.t, width: Math.max(1.5, x(b.x1) - x(b.x0)), height: H - m.b - m.t, class: "band" }, svg);
+      if (b.label && x(b.x1) - x(b.x0) > 18) el("text", { x: x(b.x0) + 3, y: m.t + 12, class: "bandlbl", text: b.label }, svg);
+    }
+    const n = o.x.length;
+    const pathOf = (vals) => { let d = ""; for (let i = 0; i < n; i++) d += (i ? "L" : "M") + x(o.x[i]).toFixed(1) + "," + y(vals[i]).toFixed(1); return d; };
+    for (const s of o.series) {
+      if (s.lo && s.hi) {
+        let d = ""; for (let i = 0; i < n; i++) d += (i ? "L" : "M") + x(o.x[i]).toFixed(1) + "," + y(s.hi[i]).toFixed(1);
+        for (let i = n - 1; i >= 0; i--) d += "L" + x(o.x[i]).toFixed(1) + "," + y(s.lo[i]).toFixed(1);
+        el("path", { d: d + "Z", style: `fill: var(${s.color}); opacity: .12` }, svg);
+      }
+      if (s.area) el("path", { d: pathOf(s.values) + `L${x(o.x[n - 1]).toFixed(1)},${y(o.yDomain[0])}L${x(o.x[0]).toFixed(1)},${y(o.yDomain[0])}Z`, style: `fill: var(${s.color}); opacity: .14` }, svg);
+    }
+    for (const mk of o.markers || []) {
+      const px = Math.round(x(mk.x)) + 0.5;
+      if (mk.kind === "hit") { el("line", { x1: px, x2: px, y1: H - m.b, y2: H - m.b + 6, class: "mk hit" }, svg); continue; }
+      el("line", { x1: px, x2: px, y1: m.t, y2: H - m.b, class: "mk " + mk.kind }, svg);
+      if (mk.kind === "bank") el("line", { x1: px + 3, x2: px + 3, y1: m.t, y2: H - m.b, class: "mk", style: "stroke-width: 2.5" }, svg);
+      if (mk.label) el("text", { x: px + (mk.kind === "bank" ? 7 : 4), y: m.t + (mk.labelY || 10), class: "mklbl " + mk.kind, text: mk.label }, svg);
+    }
+    const drawOrder = o.series.map((s, k) => k).reverse();
+    for (const k of drawOrder) { const s = o.series[k]; el("path", { d: pathOf(s.values), class: "line", style: `stroke: var(${s.color}); stroke-width: ${s.width || 2}px; opacity: ${s.opacity || 1}` }, svg); }
+    if (o.endDots) for (const s of o.series) if (s.endDot) { const c = el("circle", { cx: x(o.x[n - 1]), cy: y(s.values[n - 1]), r: 4, class: "hdot", style: `fill: var(${s.color})` }, svg); }
+    const cross = el("line", { class: "cross", y1: m.t, y2: H - m.b, visibility: "hidden" }, svg);
+    const dots = o.series.map(s => el("circle", { r: 4, class: "hdot", style: `fill: var(${s.color})`, visibility: "hidden" }, svg));
+    const hit = el("rect", { x: m.l, y: 0, width: Math.max(0, W - m.l - m.r), height: H, class: "hit", tabindex: o.focusable === false ? -1 : 0, "aria-label": (o.aria || o.title || "chart") + ". Use left and right arrow keys to read values." }, svg);
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+    api.show = i => {
+      if (i == null) { cross.setAttribute("visibility", "hidden"); dots.forEach(d => d.setAttribute("visibility", "hidden")); tip.hidden = true; return; }
+      const px = x(o.x[i]);
+      cross.setAttribute("x1", px); cross.setAttribute("x2", px); cross.setAttribute("visibility", "visible");
+      o.series.forEach((s, k) => { dots[k].setAttribute("cx", px); dots[k].setAttribute("cy", y(s.values[i])); dots[k].setAttribute("visibility", s.noDot ? "hidden" : "visible"); });
+      tip.innerHTML = `<div class="th">${(o.tipX || o.xFmt || String)(o.x[i])}</div>` + (o.tip ? o.tip(i) : o.series.map(s => tipRow(s.color, s.label, f2(s.values[i]))).join(""));
+      tip.hidden = false;
+      const tw = tip.offsetWidth;
+      tip.style.left = (px + 14 + tw > W ? px - 14 - tw : px + 14) + "px";
+      tip.style.top = m.t + "px";
+    };
+    hit.addEventListener("pointermove", e => { const r = svg.getBoundingClientRect(); api.set(nearest(o.x, x.inv(e.clientX - r.left))); });
+    hit.addEventListener("pointerleave", () => api.set(null));
+    hit.addEventListener("blur", () => api.set(null));
+    hit.addEventListener("keydown", e => {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      e.preventDefault();
+      const stepN = Math.max(1, Math.round(n / 80));
+      api.set(clamp(api.idx == null ? 0 : api.idx + (e.key === "ArrowRight" ? stepN : -stepN), 0, n - 1));
+    });
+    if (api.idx != null) api.show(api.idx);
+  }
+  mount(host, render);
+  return api;
+}
+
+/* ---------- Summary ---------- */
+const S = { checkpoint: D.modes.checkpoint.summary, permadeath: D.modes.permadeath.summary };
+(function summary() {
+  const rows = [
+    ["Deaths per 10 minutes", m => f2(S[m].deathsPer10).replace(/\.?0+$/, "")],
+    ["Progress lost per death (zones)", m => f2(S[m].lostPerDeath)],
+    ["Hits per 10 minutes", m => Math.round(S[m].hitsPer10)],
+    ["Furthest zone", m => S[m].maxZone],
+    ["Mean tension", m => f2(S[m].meanT)],
+    ["Time at pp (quietest)", m => pct(S[m].dyn[0])],
+    ["Time at mf or louder", m => pct(S[m].loudShare)],
+    ["Time at ff (loudest)", m => pct(S[m].dyn[5])],
+    ["Mean stakes / threat / uncertainty", m => `${f2(S[m].meanSn)} / ${f2(S[m].meanTh)} / ${f2(S[m].meanU)}`],
+    ["High-leverage time (LI over 2)", m => pct(S[m].highLeverage)],
+    ["Suspensions: resolved / broken / faded", m => `${S[m].suspOutcomes.res} / ${S[m].suspOutcomes.broken} / ${S[m].suspOutcomes.faded}`],
+    ["Repeating tension cycle", m => S[m].cycle ? `${S[m].cycle.lag} s` : "none found"]
+  ];
+  $("summary-table").innerHTML = `<thead><tr><th>${D.modes.checkpoint.summary.minutes} minutes each</th><th class="n">Checkpoints</th><th class="n">Permadeath</th></tr></thead><tbody>` +
+    rows.map(r => `<tr><td>${r[0]}</td><td class="n">${r[1]("checkpoint")}</td><td class="n">${r[1]("permadeath")}</td></tr>`).join("") + "</tbody>";
+  const c = S.checkpoint, p = S.permadeath;
+  $("f-summary").innerHTML = `With checkpoints the bot dies <b>${Math.round(c.deathsPer10)} times per 10 minutes</b> and loses about <b>${f2(c.lostPerDeath)} zones</b> each time. With permadeath it dies <b>${f2(p.deathsPer10)}</b> times and loses <b>${f2(p.lostPerDeath)}</b>. Checkpoint play is louder on average (mean tension ${f2(c.meanT)} against ${f2(p.meanT)}), but permadeath is more extreme: it spends ${pct(p.dyn[0])} of the time at <i>pp</i> and ${pct(p.dyn[5])} at <i>ff</i>, against ${pct(c.dyn[0])} and ${pct(c.dyn[5])}.`;
+})();
+
+/* ---------- Excerpts ---------- */
+function excerpt(mode, idP, idT, group) {
+  const E = D.modes[mode].excerpt;
+  const minP = Math.min(...E.P), maxP = Math.max(...E.P);
+  const lo = Math.floor(minP), hi = Math.max(lo + 4, Math.ceil(maxP + 0.2));
+  const zTicks = []; for (let z = lo; z <= hi; z++) zTicks.push(z);
+  const every = Math.ceil((hi - lo) / 4);
+  const markers = E.events.map(e => ({ x: e.t, kind: e.kind === "gate" ? "bar" : e.kind, label: e.kind === "death" ? `FALL −${f2(e.lost).replace(/0$/, "")}` : e.kind === "bank" ? "BANKED" : "" }));
+  const hits = E.hits.map(t => ({ x: t, kind: "hit" }));
+  const xTicks = [0, 20, 40, 60, 80, 100, 120];
+  const xFmt = t => `${Math.round(t)} s`;
+  lineChart($(idP), {
+    x: E.t, xDomain: [0, 120], yDomain: [lo, hi], yTicks: zTicks, yFmt: z => (z - lo) % every === 0 ? `Z${z + 1}` : "", height: 120, noXAxis: true,
+    series: [{ label: "Progress", values: E.P, color: "--prog", width: 2.5 }], markers: markers.map(mk => Object.assign({}, mk, { label: mk.kind === "death" ? mk.label : "" })),
+    group, tipX: xFmt, aria: `${ML[mode]} excerpt, progress`
+  });
+  lineChart($(idT), {
+    x: E.t, xDomain: [0, 120], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 170, xTicks, xFmt,
+    series: [
+      { label: "Tension", values: E.T, color: "--tension", width: 2.4, area: true },
+      { label: "Stakes", values: E.Sn, color: "--stakes", width: 1.2, opacity: 0.65 },
+      { label: "Threat", values: E.Th, color: "--threat", width: 1.2, opacity: 0.65 },
+      { label: "Uncertainty", values: E.U, color: "--unc", width: 1.2, opacity: 0.65 }
+    ],
+    bands: E.susp.map(s => ({ x0: s.t0, x1: s.t1, label: "sus." })),
+    markers: markers.map(mk => Object.assign({}, mk, { label: mk.kind === "bank" ? mk.label : "" })).concat(hits),
+    group, aria: `${ML[mode]} excerpt, tension and its parts`
+  });
+  $(mode === "checkpoint" ? "ex-cp-lbl" : "ex-pd-lbl").textContent = `from ${Math.floor(E.sessionStart / 60)}:${String(Math.round(E.sessionStart % 60)).padStart(2, "0")} of session 1`;
+}
+excerpt("checkpoint", "ex-cp-p", "ex-cp-t", []);
+excerpt("permadeath", "ex-pd-p", "ex-pd-t", []);
+
+/* ---------- Event-locked averages ---------- */
+const LOFF = Array.from({ length: 201 }, (_, i) => (i - 100) / 10);
+const KIND = { gate: "Gate", bank: "Safe point", hit: "Hit", death: "Death" };
+(function locked() {
+  const grid = $("locked-grid");
+  const order = [["gate", "checkpoint"], ["gate", "permadeath"], ["death", "checkpoint"], ["death", "permadeath"], ["hit", "checkpoint"], ["hit", "permadeath"], ["bank", "checkpoint"]];
+  for (const [kind, mode] of order) {
+    const L = D.modes[mode].locked[kind]; if (!L) continue;
+    const card = document.createElement("div"); card.className = "card";
+    card.innerHTML = `<div class="panel-head"><h3>${KIND[kind]}, ${ML[mode].toLowerCase()}</h3><span class="label">n = ${L.n}</span></div>`;
+    const host = document.createElement("div"); card.appendChild(host); grid.appendChild(card);
+    lineChart(host, {
+      x: LOFF, xDomain: [-10, 10], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 170,
+      xTicks: [-10, -5, 0, 5, 10], xFmt: v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v) + " s", tipX: v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} s from the ${KIND[kind].toLowerCase()}`,
+      series: [
+        { label: "Tension", values: L.T.mean, lo: L.T.q1, hi: L.T.q3, color: "--tension", width: 2.4 },
+        { label: "Stakes", values: L.Sn.mean, color: "--stakes", width: 1.5 },
+        { label: "Threat", values: L.Th.mean, color: "--threat", width: 1.5 },
+        { label: "Uncertainty", values: L.U.mean, color: "--unc", width: 1.5 }
+      ],
+      markers: [{ x: 0, kind: "zero" }], aria: `Average around a ${KIND[kind].toLowerCase()}, ${ML[mode]}`
+    });
+  }
+  const at = (arr, s) => arr[Math.round(s * 10) + 100];
+  const win = (arr, a, b) => mean(arr.slice(Math.round(a * 10) + 100, Math.round(b * 10) + 101));
+  const offs = [-5, -1, 0, 1, 5];
+  let rowsH = "";
+  for (const [kind, mode] of order) {
+    const L = D.modes[mode].locked[kind]; if (!L) continue;
+    for (const k of ["T", "Sn", "Th", "U"]) rowsH += `<tr><td>${KIND[kind]}, ${ML[mode].toLowerCase()}</td><td>${MEAS[k].label}</td>${offs.map(o => `<td class="n">${f2(at(L[k].mean, o))}</td>`).join("")}</tr>`;
+  }
+  $("locked-table").innerHTML = `<thead><tr><th>Event</th><th>Measure</th>${offs.map(o => `<th class="n">${o > 0 ? "+" : o < 0 ? "−" : ""}${Math.abs(o)} s</th>`).join("")}</tr></thead><tbody>${rowsH}</tbody>`;
+  const g = D.modes.checkpoint.locked.gate, d = D.modes.checkpoint.locked.death, h = D.modes.checkpoint.locked.hit;
+  const drop = win(g.T.mean, -2, -0.1) - win(g.T.mean, 1, 3);
+  let peakI = 0; for (let i = 70; i <= 130; i++) if (h.T.mean[i] > h.T.mean[peakI] || peakI === 0) peakI = i;
+  const peakAt = (peakI - 100) / 10;
+  const dp = D.modes.permadeath.locked.death;
+  $("f-locked").innerHTML = `Passing through a gate is a resolution: across ${g.n} checkpoint gates, tension falls by <b>${f2(drop)}</b> within three seconds as threat and uncertainty collapse. Tension peaks <b>${Math.abs(peakAt).toFixed(1)} s ${peakAt < 0 ? "before" : "after"}</b> a hit lands, because the simulated futures see the hit coming. A death resets stakes: with checkpoints they drop from ${f2(at(d.Sn.mean, -1))} to ${f2(at(d.Sn.mean, 2))}, and with permadeath from ${f2(at(dp.Sn.mean, -1))} to ${f2(at(dp.Sn.mean, 2))}.`;
+})();
+
+/* ---------- Phase portraits ---------- */
+const RAMP_LIGHT = ["#b7d3f6", "#86b6ef", "#5598e7", "#2a78d6", "#1c5cab", "#104281", "#0d366b"];
+const RAMP_DARK = ["#184f95", "#1c5cab", "#256abf", "#3987e5", "#5598e7", "#86b6ef", "#b7d3f6"];
+function isDark() { const t = document.documentElement.getAttribute("data-theme"); return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches; }
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
+function rampAt(v) {
+  const r = isDark() ? RAMP_DARK : RAMP_LIGHT, f = clamp(v, 0, 1) * (r.length - 1), i = Math.min(r.length - 2, Math.floor(f)), t = f - i;
+  const a = hexRgb(r[i]), b = hexRgb(r[i + 1]);
+  return `rgb(${a.map((c, k) => Math.round(c + (b[k] - c) * t)).join(",")})`;
+}
+function setRampSwatch() { const r = isDark() ? RAMP_DARK : RAMP_LIGHT; $("ramp-swatch").style.background = `linear-gradient(90deg, ${r.join(", ")})`; }
+function phase(mode, id) {
+  const host = $(id), P = D.modes[mode].phase;
+  mount(host, () => {
+    setRampSwatch();
+    host.innerHTML = ""; host.classList.add("chart");
+    const W = host.clientWidth || 400, H = Math.min(380, Math.round(W * 0.8));
+    const m = { l: 42, r: 12, t: 10, b: 34 };
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const cv = document.createElement("canvas"); cv.width = W * dpr; cv.height = H * dpr; cv.style.height = H + "px";
+    cv.setAttribute("role", "img"); cv.setAttribute("aria-label", `${ML[mode]}: moments of play by threat and uncertainty, coloured by stakes`);
+    host.appendChild(cv);
+    const ctx = cv.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const x = scale(0, 1, m.l, W - m.r), y = scale(0, 1, H - m.b, m.t);
+    ctx.strokeStyle = css("--grid"); ctx.lineWidth = 1; ctx.fillStyle = css("--ink-3"); ctx.font = `10.5px ${css("--mono")}`;
+    for (const v of [0, 0.25, 0.5, 0.75, 1]) {
+      ctx.beginPath(); ctx.moveTo(x(v) + .5, m.t); ctx.lineTo(x(v) + .5, H - m.b); ctx.moveTo(m.l, y(v) + .5); ctx.lineTo(W - m.r, y(v) + .5); ctx.stroke();
+      ctx.textAlign = "center"; ctx.textBaseline = "top"; ctx.fillText(v.toFixed(2).replace(/0$/, ""), x(v), H - m.b + 6);
+      ctx.textAlign = "right"; ctx.textBaseline = "middle"; ctx.fillText(v.toFixed(2).replace(/0$/, ""), m.l - 7, y(v));
+    }
+    ctx.fillStyle = css("--ink-2"); ctx.font = `500 11px ${css("--body")}`; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+    ctx.fillText("Threat →", (m.l + W - m.r) / 2, H - 3);
+    ctx.save(); ctx.translate(11, (m.t + H - m.b) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText("Uncertainty →", 0, 0); ctx.restore();
+    const pts = P.pts.slice().sort((a, b) => a[2] - b[2]);
+    ctx.globalAlpha = 0.4;
+    for (const p of pts) { ctx.fillStyle = rampAt(p[2]); ctx.beginPath(); ctx.arc(x(p[0]), y(p[1]), 2.2, 0, 6.283); ctx.fill(); }
+    ctx.globalAlpha = 1;
+    ctx.font = `italic 15px ${css("--display")}`; ctx.lineJoin = "round";
+    const halo = (t, px, py, align) => { ctx.textAlign = align; ctx.strokeStyle = css("--surface"); ctx.lineWidth = 5; ctx.strokeText(t, px, py); ctx.fillStyle = css("--ink-2"); ctx.fillText(t, px, py); };
+    halo("calm", x(0.03), y(0.05), "left");
+    halo("danger, outcome clear", x(0.98), y(0.05), "right");
+    halo("suspense", x(0.98), y(0.95), "right");
+    if (P.trajectory) {
+      const tr = P.trajectory;
+      ctx.strokeStyle = css("--ink"); ctx.lineWidth = 2; ctx.lineJoin = "round"; ctx.beginPath();
+      tr.forEach((p, i) => i ? ctx.lineTo(x(p[0]), y(p[1])) : ctx.moveTo(x(p[0]), y(p[1]))); ctx.stroke();
+      ctx.fillStyle = css("--ink");
+      for (const p of tr) { ctx.beginPath(); ctx.arc(x(p[0]), y(p[1]), 2.5, 0, 6.283); ctx.fill(); }
+      const a = tr[0], b = tr[tr.length - 1];
+      ctx.font = `500 10px ${css("--mono")}`;
+      halo("−25 s", x(a[0]) + 6, y(a[1]) - 6, "left");
+      ctx.fillStyle = css("--ink"); ctx.beginPath(); ctx.arc(x(a[0]), y(a[1]), 4, 0, 6.283); ctx.fill();
+      ctx.strokeStyle = css("--danger"); ctx.lineWidth = 2.5; ctx.beginPath();
+      ctx.moveTo(x(b[0]) - 5, y(b[1]) - 5); ctx.lineTo(x(b[0]) + 5, y(b[1]) + 5); ctx.moveTo(x(b[0]) + 5, y(b[1]) - 5); ctx.lineTo(x(b[0]) - 5, y(b[1]) + 5); ctx.stroke();
+      ctx.font = `500 10px ${css("--mono")}`; ctx.textAlign = "left"; ctx.strokeStyle = css("--surface"); ctx.lineWidth = 4;
+      ctx.strokeText("death", x(b[0]) + 8, y(b[1]) + 12); ctx.fillStyle = css("--danger"); ctx.fillText("death", x(b[0]) + 8, y(b[1]) + 12);
+    }
+    // nearest-point hover
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+    const buckets = new Map(), B = 24;
+    P.pts.forEach((p, i) => { const k = Math.floor(p[0] * B) + "," + Math.floor(p[1] * B); if (!buckets.has(k)) buckets.set(k, []); buckets.get(k).push(i); });
+    cv.addEventListener("pointermove", e => {
+      const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+      const tx = x.inv(mx), ty = y.inv(my); let best = -1, bd = 144;
+      const bx = Math.floor(tx * B), by = Math.floor(ty * B);
+      for (let i = -1; i <= 1; i++) for (let j = -1; j <= 1; j++) for (const k of buckets.get((bx + i) + "," + (by + j)) || []) {
+        const p = P.pts[k], d = (x(p[0]) - mx) ** 2 + (y(p[1]) - my) ** 2; if (d < bd) { bd = d; best = k; }
+      }
+      if (best < 0) { tip.hidden = true; return; }
+      const p = P.pts[best];
+      tip.innerHTML = `<div class="th">One moment</div>${tipRow("--threat", "Threat", f2(p[0]))}${tipRow("--unc", "Uncertainty", f2(p[1]))}${tipRow("--stakes", "Stakes", f2(p[2]))}`;
+      tip.hidden = false;
+      const tw = tip.offsetWidth; tip.style.left = (mx + 14 + tw > W ? mx - 14 - tw : mx + 14) + "px"; tip.style.top = Math.max(0, my - 40) + "px";
+    });
+    cv.addEventListener("pointerleave", () => tip.hidden = true);
+  });
+}
+phase("checkpoint", "ph-cp"); phase("permadeath", "ph-pd");
+(function phaseText() {
+  const share = (mode, f) => { const p = D.modes[mode].phase.pts; return p.filter(f).length / p.length; };
+  const calm = q => q[0] < 0.3 && q[1] < 0.3, susp = q => q[1] > 0.6 && q[0] > 0.4, clear = q => q[0] > 0.6 && q[1] < 0.3;
+  const rows = [["Calm (threat and uncertainty under 0.3)", calm], ["Suspense (uncertainty over 0.6, threat over 0.4)", susp], ["Danger with a clear outcome (threat over 0.6, uncertainty under 0.3)", clear]];
+  $("phase-table").innerHTML = `<thead><tr><th>Region</th><th class="n">Checkpoints</th><th class="n">Permadeath</th></tr></thead><tbody>` + rows.map(r => `<tr><td>${r[0]}</td><td class="n">${pct(share("checkpoint", r[1]))}</td><td class="n">${pct(share("permadeath", r[1]))}</td></tr>`).join("") + "</tbody>";
+  $("f-phase").innerHTML = `Threat and uncertainty are related but not the same. Uncertainty is highest at middling-to-high threat, when a hit is possible but not certain. Checkpoint play spends <b>${pct(share("checkpoint", susp))}</b> of its time in that suspense region and permadeath <b>${pct(share("permadeath", susp))}</b>. Permadeath spends <b>${pct(share("permadeath", calm))}</b> of its time calm, against ${pct(share("checkpoint", calm))} with checkpoints, because each death restarts the run in the easy early zones.`;
+})();
+
+/* ---------- Distributions ---------- */
+function mirrorHist(host, key) {
+  const a = D.modes.checkpoint.hist[key], b = D.modes.permadeath.hist[key];
+  const top = Math.max(...a, ...b);
+  const ymax = Math.ceil(top * 20) / 20 || 0.05;
+  mount(host, () => {
+    host.innerHTML = ""; host.classList.add("chart");
+    const W = host.clientWidth || 400, H = 190, m = { l: 42, r: 10, t: 24, b: 22 };
+    const svg = el("svg", { width: W, height: H, role: "img", "aria-label": `Time spent at each level of ${MEAS[key].label.toLowerCase()}` }, host);
+    el("text", { x: m.l, y: 13, class: "ctitle", text: MEAS[key].label }, svg);
+    const x = scale(0, 1, m.l, W - m.r), mid = (m.t + H - m.b) / 2, y = scale(0, ymax, 0, mid - m.t);
+    for (const v of [ymax, ymax / 2]) {
+      for (const s of [-1, 1]) { el("line", { x1: m.l, x2: W - m.r, y1: mid - s * y(v), y2: mid - s * y(v), class: "grid" }, svg); el("text", { x: m.l - 7, y: mid - s * y(v), class: "tick ytick", text: pct(v) }, svg); }
+    }
+    for (const v of [0, 0.25, 0.5, 0.75, 1]) el("text", { x: x(v), y: H - 7, class: "tick xtick", text: v === 0 || v === 1 ? String(v) : v.toFixed(2) }, svg);
+    const bw = Math.min(24, (x(0.05) - x(0)) - 2), rr = Math.min(3, bw / 2);
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+    for (let i = 0; i < 20; i++) {
+      const cx = x(i * 0.05 + 0.025), x0 = cx - bw / 2;
+      const hu = y(a[i]), hd = y(b[i]);
+      if (hu > 0.5) el("path", { d: `M${x0},${mid - 1}V${mid - 1 - hu + rr}Q${x0},${mid - 1 - hu} ${x0 + rr},${mid - 1 - hu}H${x0 + bw - rr}Q${x0 + bw},${mid - 1 - hu} ${x0 + bw},${mid - 1 - hu + rr}V${mid - 1}Z`, style: `fill: var(${MEAS[key].color})` }, svg);
+      if (hd > 0.5) el("path", { d: `M${x0},${mid + 1}V${mid + 1 + hd - rr}Q${x0},${mid + 1 + hd} ${x0 + rr},${mid + 1 + hd}H${x0 + bw - rr}Q${x0 + bw},${mid + 1 + hd} ${x0 + bw},${mid + 1 + hd - rr}V${mid + 1}Z`, style: `fill: var(${MEAS[key].color}); opacity: .55` }, svg);
+      const hitR = el("rect", { x: cx - (x(0.05) - x(0)) / 2, y: m.t, width: x(0.05) - x(0), height: H - m.t - m.b, class: "hit" }, svg);
+      hitR.addEventListener("pointerenter", () => {
+        tip.innerHTML = `<div class="th">${MEAS[key].label} ${(i * 0.05).toFixed(2)}–${(i * 0.05 + 0.05).toFixed(2)}</div><div class="row"><span>Checkpoints</span><span class="v">${(a[i] * 100).toFixed(1)}%</span></div><div class="row"><span>Permadeath</span><span class="v">${(b[i] * 100).toFixed(1)}%</span></div>`;
+        tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = (cx + 14 + tw > W ? cx - 14 - tw : cx + 14) + "px"; tip.style.top = m.t + "px";
+      });
+      hitR.addEventListener("pointerleave", () => tip.hidden = true);
+    }
+    el("line", { x1: m.l, x2: W - m.r, y1: mid, y2: mid, class: "axis" }, svg);
+    el("text", { x: W - m.r, y: m.t + 2, class: "tick", "text-anchor": "end", text: "CHECKPOINTS ↑" }, svg);
+    el("text", { x: W - m.r, y: H - m.b - 4, class: "tick", "text-anchor": "end", text: "PERMADEATH ↓" }, svg);
+  });
+}
+(function dist() {
+  const g = $("hist-grid");
+  for (const k of ["T", "Sn", "Th", "U"]) { const c = document.createElement("div"); c.className = "card"; const h = document.createElement("div"); c.appendChild(h); g.appendChild(c); mirrorHist(h, k); }
+  for (const [mode, id] of [["checkpoint", "run-cp"], ["permadeath", "run-pd"]]) {
+    const R = D.modes[mode].stakesRun, xs = R.Sn.map((_, i) => i);
+    lineChart($(id), {
+      x: xs, xDomain: [0, D.secondsPerSession], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 150,
+      xTicks: [0, 120, 240, 360, 480, 600].filter(v => v <= D.secondsPerSession), xFmt: v => `${v / 60} min`, tipX: v => `${Math.floor(v / 60)}:${String(v % 60).padStart(2, "0")}`,
+      series: [{ label: "Stakes", values: R.Sn, color: "--stakes", width: 1.8 }],
+      tip: i => tipRow("--stakes", "Stakes", f2(R.Sn[i])) + tipRow("--prog", "Progress", f2(R.P[i])),
+      markers: R.deaths.map(t => ({ x: t, kind: "death" })).concat(R.banks.map(t => ({ x: t, kind: "bar" }))), aria: `Stakes over one ${ML[mode].toLowerCase()} session`
+    });
+  }
+  const bins = Array.from({ length: 20 }, (_, i) => `${(i * 0.05).toFixed(2)}–${(i * 0.05 + 0.05).toFixed(2)}`);
+  $("hist-table").innerHTML = `<thead><tr><th>Level</th>${["T", "Sn", "Th", "U"].map(k => `<th class="n">${MEAS[k].label} CP</th><th class="n">${MEAS[k].label} PD</th>`).join("")}</tr></thead><tbody>` +
+    bins.map((b, i) => `<tr><td>${b}</td>${["T", "Sn", "Th", "U"].map(k => `<td class="n">${(D.modes.checkpoint.hist[k][i] * 100).toFixed(1)}%</td><td class="n">${(D.modes.permadeath.hist[k][i] * 100).toFixed(1)}%</td>`).join("")}</tr>`).join("") + "</tbody>";
+  const c = S.checkpoint, p = S.permadeath;
+  $("f-dist").innerHTML = `The death rule mostly changes stakes. Mean stakes are <b>${f2(c.meanSn)}</b> with checkpoints and <b>${f2(p.meanSn)}</b> with permadeath: a sawtooth that resets at every safe point against a climb that only a death resets. Threat is lower with permadeath (${f2(p.meanTh)} against ${f2(c.meanTh)}) because runs restart in easy zones, so tension splits into long quiet stretches and rare, very loud ones.`;
+})();
+
+/* ---------- Autocorrelation ---------- */
+(function acfs() {
+  const lags = D.modes.checkpoint.acf.map((_, i) => i / D.hz);
+  const zeroAt = mode => { const a = D.modes[mode].acf; for (let i = 1; i < a.length; i++) if (a[i] <= 0) return i / D.hz; return null; };
+  for (const [mode, id] of [["checkpoint", "acf-cp"], ["permadeath", "acf-pd"]]) {
+    const a = D.modes[mode].acf, z = zeroAt(mode);
+    const ymin = Math.min(-0.2, Math.floor(Math.min(...a) * 10) / 10);
+    lineChart($(id), {
+      x: lags, xDomain: [0, 60], yDomain: [ymin, 1], yTicks: [ymin, 0, 0.5, 1].filter((v, i, s) => s.indexOf(v) === i), yBase: 0, yFmt: v => v.toFixed(1), height: 180, title: ML[mode],
+      xTicks: [0, 10, 20, 30, 40, 50, 60], xFmt: v => `${v} s`, tipX: v => `${v.toFixed(1)} s later`,
+      series: [{ label: "Autocorrelation", values: a, color: "--tension", width: 2 }],
+      markers: z ? [{ x: z, kind: "bar", label: `ZERO AT ${z.toFixed(1)} S`, labelY: 12 }] : [], aria: `Autocorrelation of tension, ${ML[mode]}`
+    });
+  }
+  const zc = zeroAt("checkpoint"), zp = zeroAt("permadeath");
+  const cyc = S.checkpoint.cycle || S.permadeath.cycle;
+  $("f-acf").innerHTML = cyc
+    ? `Tension has a repeating cycle of about <b>${cyc.lag} s</b>.`
+    : `No. Tension stays similar to itself for about <b>${zc ? zc.toFixed(0) : "?"} s</b> with checkpoints and <b>${zp ? zp.toFixed(0) : "?"} s</b> with permadeath, then becomes unrelated to its past, with no second hump. Motif slots are evenly spaced within a zone, but zones take irregular amounts of time to clear and every gate or death restarts the phrase, so the pulse never settles into a meter.`;
+})();
+
+/* ---------- Motifs ---------- */
+const MOTIF = ["A", "B", "C", "D"], MOTIF_NAME = ["Pincer", "Crossfire", "Stream", "Ring"];
+const ord = n => n + (n % 10 === 1 && n % 100 !== 11 ? "st" : n % 10 === 2 && n % 100 !== 12 ? "nd" : n % 10 === 3 && n % 100 !== 13 ? "rd" : "th");
+const mmss = t => `${Math.floor(t / 60)}:${String(Math.round(t % 60)).padStart(2, "0")}`;
+function pianoRoll(host, mode) {
+  const E = D.modes[mode].excerpt;
+  mount(host, () => {
+    host.innerHTML = ""; host.classList.add("chart");
+    const W = host.clientWidth || 600, H = 136, m = { l: 42, r: 14, t: 6, b: 24 }, rh = (H - m.t - m.b) / 4;
+    const svg = el("svg", { width: W, height: H, role: "img", "aria-label": `Motif voices, ${ML[mode]} excerpt` }, host);
+    const x = scale(0, 120, m.l, W - m.r);
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+    for (let r = 0; r < 4; r++) {
+      el("text", { x: m.l - 7, y: m.t + rh * (r + 0.5), class: "tick ytick", text: MOTIF[r] }, svg);
+      el("line", { x1: m.l, x2: W - m.r, y1: m.t + rh * (r + 1), y2: m.t + rh * (r + 1), class: "grid" }, svg);
+    }
+    for (const v of [0, 20, 40, 60, 80, 100, 120]) el("text", { x: x(v), y: H - 7, class: "tick xtick", text: `${v} s` }, svg);
+    for (const e of E.events) if (e.kind === "death") { const px = Math.round(x(e.t)) + 0.5; el("line", { x1: px, x2: px, y1: m.t, y2: H - m.b, class: "mk death" }, svg); }
+    const lastLbl = [-1e9, -1e9, -1e9, -1e9];
+    for (const mo of E.motifs) {
+      const xa = x(Math.max(0, mo.t0)), xb = x(Math.min(120, mo.t1)), y = m.t + rh * mo.ti + 2, bh = rh - 4;
+      el("rect", { x: xa, y, width: Math.max(2, xb - xa), height: bh, rx: 2, style: "fill: var(--ink-2); opacity: .28" }, svg);
+      if (mo.t0 >= 0) {
+        const tk = Math.max(3, bh * Math.min(1, mo.bits / 7));
+        el("rect", { x: x(mo.t0) - 1, y: y + bh - tk, width: 2, height: tk, style: "fill: var(--ink)" }, svg);
+        if (x(mo.t0) - lastLbl[mo.ti] > 46) { el("text", { x: x(mo.t0) + 4, y: y + bh / 2 + 4, class: "tick", style: "fill: var(--ink)", text: MOTIF[mo.ti] + (mo.varied ? "′" : "") + (mo.violation ? "!" : "") + (mo.n === 1 ? " new" : "") }, svg); lastLbl[mo.ti] = x(mo.t0); }
+      }
+      const hr = el("rect", { x: xa, y, width: Math.max(6, xb - xa), height: bh, class: "hit" }, svg);
+      hr.addEventListener("pointerenter", () => {
+        tip.innerHTML = `<div class="th">${MOTIF[mo.ti]} ${MOTIF_NAME[mo.ti]}${mo.varied ? ", varied" : ""}${mo.violation ? ", broken pattern" : ""}</div><div class="row"><span>Appearance</span><span class="v">${ord(mo.n)}</span></div><div class="row"><span>Surprise</span><span class="v">${mo.bits.toFixed(1)} bits</span></div><div class="row"><span>Playing</span><span class="v">${Math.max(0, mo.t0).toFixed(0)}–${Math.min(120, mo.t1).toFixed(0)} s</span></div>`;
+        tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = Math.min(W - tw, xa) + "px"; tip.style.top = (y + bh + 4) + "px";
+      });
+      hr.addEventListener("pointerleave", () => tip.hidden = true);
+    }
+  });
+}
+function voicesBars(host, mode) {
+  const V = D.modes[mode].motifs.voices;
+  mount(host, () => {
+    host.innerHTML = ""; host.classList.add("chart");
+    const W = host.clientWidth || 400, H = 190, m = { l: 42, r: 10, t: 24, b: 30 };
+    const svg = el("svg", { width: W, height: H, role: "img", "aria-label": `Mean tension by number of motifs playing, ${ML[mode]}` }, host);
+    el("text", { x: m.l, y: 13, class: "ctitle", text: ML[mode] }, svg);
+    const y = scale(0, 1, H - m.b, m.t), band = (W - m.l - m.r) / 5, bw = Math.min(24, band - 8);
+    for (const v of [0, 0.5, 1]) { el("line", { x1: m.l, x2: W - m.r, y1: y(v), y2: y(v), class: v === 0 ? "axis" : "grid" }, svg); el("text", { x: m.l - 7, y: y(v), class: "tick ytick", text: v.toFixed(1) }, svg); }
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+    V.meanT.forEach((t, i) => {
+      const cx = m.l + band * (i + 0.5), x0 = cx - bw / 2;
+      el("text", { x: cx, y: H - 15, class: "tick xtick", text: i === 4 ? "4" : String(i) }, svg);
+      el("text", { x: cx, y: H - 3, class: "tick xtick", text: pct(V.share[i]) }, svg);
+      if (t == null) return;
+      const top = y(t), r = 3;
+      el("path", { d: `M${x0},${y(0)}V${top + r}Q${x0},${top} ${x0 + r},${top}H${x0 + bw - r}Q${x0 + bw},${top} ${x0 + bw},${top + r}V${y(0)}Z`, style: "fill: var(--tension)" }, svg);
+      el("text", { x: cx, y: top - 5, class: "tick xtick", style: "fill: var(--ink-2)", text: t.toFixed(2) }, svg);
+      const hr = el("rect", { x: cx - band / 2, y: m.t, width: band, height: H - m.t - m.b, class: "hit" }, svg);
+      hr.addEventListener("pointerenter", () => { tip.innerHTML = `<div class="th">${i} motif${i === 1 ? "" : "s"} playing</div>${tipRow("--tension", "Mean tension", t.toFixed(2))}<div class="row"><span>Share of time</span><span class="v">${pct(V.share[i])}</span></div>`; tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = Math.min(W - tw, cx + 10) + "px"; tip.style.top = m.t + "px"; });
+      hr.addEventListener("pointerleave", () => tip.hidden = true);
+    });
+    el("text", { x: W - m.r, y: m.t - 10, class: "tick", "text-anchor": "end", text: "BARS: MEAN TENSION · BELOW: SHARE OF TIME" }, svg);
+  });
+}
+(function motifs() {
+  pianoRoll($("roll-cp"), "checkpoint"); pianoRoll($("roll-pd"), "permadeath");
+  voicesBars($("vb-cp"), "checkpoint"); voicesBars($("vb-pd"), "permadeath");
+  const Mc = D.modes.checkpoint.motifs, Mp = D.modes.permadeath.motifs;
+  // establishment small multiples
+  const grid = $("est-grid");
+  for (let ti = 0; ti < 4; ti++) {
+    const ec = Mc.stats[ti].establishment, ep = Mp.stats[ti].establishment;
+    const xs = [], vc = [], vp = [];
+    for (let b = 0; b < ec.length; b++) if (ec[b].n >= 3 && ep[b].n >= 3) { xs.push(b + 1); vc.push(ec[b].T); vp.push(ep[b].T); }
+    const card = document.createElement("div"); card.className = "card";
+    card.innerHTML = `<div class="panel-head"><h3>${MOTIF[ti]} ${MOTIF_NAME[ti]}</h3><span class="label">hits per appearance ${f2(Mc.stats[ti].hitsPerAppearance)} / ${f2(Mp.stats[ti].hitsPerAppearance)}</span></div>`;
+    const h = document.createElement("div"); card.appendChild(h); grid.appendChild(card);
+    if (xs.length < 2) { h.innerHTML = `<p class="caption">Not enough appearances to plot.</p>`; continue; }
+    lineChart(h, {
+      x: xs, xDomain: [xs[0], xs[xs.length - 1]], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 150,
+      xTicks: xs, xFmt: v => (v === 10 ? "10+" : String(v)), tipX: v => `${v === 10 ? "10th or later" : ord(v)} appearance`,
+      series: [{ label: "Checkpoints", values: vc, color: "--tension", width: 2.2 }, { label: "Permadeath", values: vp, color: "--ink-2", width: 2 }],
+      aria: `Mean tension by appearance number, motif ${MOTIF[ti]}`
+    });
+  }
+  // novelty event-locked
+  const NOFF = Array.from({ length: 151 }, (_, i) => (i - 50) / 10);
+  for (const [mode, id] of [["checkpoint", "nov-cp"], ["permadeath", "nov-pd"]]) {
+    const N = D.modes[mode].motifs.novelty;
+    lineChart($(id), {
+      x: NOFF, xDomain: [-5, 10], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 180, title: `${ML[mode]} (n = ${N.fresh.n} first or second, ${N.familiar.n} later)`,
+      xTicks: [-5, 0, 5, 10], xFmt: v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v) + " s", tipX: v => `${v > 0 ? "+" : v < 0 ? "−" : ""}${Math.abs(v).toFixed(1)} s from the motif's start`,
+      series: [{ label: "First or second hearing", values: N.fresh.T, color: "--tension", width: 2.2 }, { label: "Fourth or later", values: N.familiar.T, color: "--ink-2", width: 2 }],
+      markers: [{ x: 0, kind: "zero" }], aria: `Tension around a motif's start, ${ML[mode]}`
+    });
+  }
+  // frequency table
+  const rowsF = [];
+  for (let ti = 0; ti < 4; ti++) for (const [mode, Mm] of [["checkpoint", Mc], ["permadeath", Mp]]) {
+    const st = Mm.stats[ti];
+    rowsF.push(`<tr><td>${MOTIF[ti]} ${MOTIF_NAME[ti]}</td><td>${ML[mode]}</td><td class="n">${st.per10.toFixed(0)}</td><td class="n">${st.firstHeard != null ? mmss(st.firstHeard) : "–"}</td><td class="n">${st.medianGap != null ? st.medianGap.toFixed(1) + " s" : "–"}</td><td class="n">${pct(st.variedShare)}</td><td class="n">${pct(st.combinedShare)}</td><td class="n">${f2(st.hitsPerAppearance)}</td></tr>`);
+  }
+  $("freq-table").innerHTML = `<thead><tr><th>Motif</th><th>Death rule</th><th class="n">Per 10 min</th><th class="n">First heard</th><th class="n">Median gap</th><th class="n">Varied</th><th class="n">Layered</th><th class="n">Hits per appearance</th></tr></thead><tbody>${rowsF.join("")}</tbody>` +
+    `<tfoot><tr><td colspan="8" class="caption" style="white-space: normal; border: 0; padding-top: 10px">First heard is in session 1. The median gap is between appearances of the same motif. Layered means it started alongside another motif. The motif sequence carries ${Mc.sequence.condEntropy.toFixed(2)} bits of uncertainty per motif with checkpoints and ${Mp.sequence.condEntropy.toFixed(2)} with permadeath, out of a possible 2.</td></tr></tfoot>`;
+  // findings
+  const vc = Mc.voices.meanT, vp = Mp.voices.meanT;
+  $("f-mot1").innerHTML = `The scheduler introduces a new motif every two zones (first heard at ${mmss(Mc.stats[0].firstHeard)}, ${mmss(Mc.stats[1].firstHeard)}, ${mmss(Mc.stats[2].firstHeard)} and ${mmss(Mc.stats[3].firstHeard)} in the first checkpoint session), varies familiar ones about half the time, and layers them more as zones get harder. The motifs differ in danger: <b>Ring and Crossfire</b> land about ${f2(Mc.stats[3].hitsPerAppearance)} and ${f2(Mc.stats[1].hitsPerAppearance)} hits per appearance with checkpoints, while Pincer and Stream land ${f2(Mc.stats[0].hitsPerAppearance)} and ${f2(Mc.stats[2].hitsPerAppearance)}.`;
+  $("f-mot2").innerHTML = `<b>Concurrency drives tension.</b> Mean tension climbs from ${f2(vc[0])} with no motif playing to ${f2(vc[3])} with three and ${f2(vc[4])} with four (checkpoints). With checkpoints it levels off at three to four voices, as if the player is already saturated. With permadeath it keeps climbing, to ${f2(vp[4])}, because the stakes are higher.`;
+  $("f-mot3").innerHTML = `In bot play tension <b>rises</b> with a motif's appearance number, the opposite of habituation. That is a confound, not a finding: later appearances come in harder zones with more layering, and the bot never learns, so nothing can habituate. Testing habituation needs a human, with appearances compared within the same zone. Rate your tension in Tension Score and its results table shows your own habituation.`;
+  $("f-mot4").innerHTML = `The few first and second hearings (${Mc.novelty.fresh.n} with checkpoints, ${Mp.novelty.fresh.n} with permadeath) mostly happen in easy early zones, so in bot play tension around them is not higher than around familiar ones. Novelty is something a person feels and the bot does not, so this is another comparison that needs your ratings.`;
+
+  // structure: structured against random order, and broken against kept patterns
+  const R = D.randomCompare, Vc = Mc.violations, Vp = Mp.violations;
+  const N = Math.min(Mc.curve.length, R.curve.length), idx = Array.from({ length: N }, (_, i) => i + 1);
+  lineChart($("curve-chart"), {
+    x: idx, xDomain: [1, N], yDomain: [0, 4], yTicks: [0, 1, 2, 3, 4], yBase: 0, yFmt: v => `${v} bit${v === 1 ? "" : "s"}`, height: 200, title: "Pattern surprise by motif number (checkpoints, smoothed over 13 motifs)",
+    xTicks: [1, 40, 80, 120, 160].filter(v => v <= N), xFmt: v => `#${v}`, tipX: v => `Motif #${v}`,
+    series: [{ label: "Structured", values: Mc.curve.slice(0, N), color: "--tension", width: 2.2 }, { label: "Random order", values: R.curve.slice(0, N), color: "--ink-2", width: 2 }],
+    tip: i => tipRow("--tension", "Structured", `${Mc.curve[i].toFixed(2)} bits`) + tipRow("--ink-2", "Random order", `${R.curve[i].toFixed(2)} bits`),
+    aria: "Mean pattern surprise by motif number, structured against random composition"
+  });
+  const NOFF2 = Array.from({ length: 151 }, (_, i) => (i - 50) / 10);
+  const vfmt = v => (v > 0 ? "+" : v < 0 ? "−" : "") + Math.abs(v) + " s";
+  lineChart($("viol-x"), {
+    x: NOFF2, xDomain: [-5, 10], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 180, title: `Pattern surprise trace (n = ${Vc.broken.n} broken, ${Vc.kept.n} kept)`,
+    xTicks: [-5, 0, 5, 10], xFmt: vfmt, tipX: v => `${vfmt(+v.toFixed(1))} from the motif's start`,
+    series: [{ label: "Broken pattern", values: Vc.broken.X, color: "--tension", width: 2.2 }, { label: "Kept pattern", values: Vc.kept.X, color: "--ink-2", width: 2 }],
+    markers: [{ x: 0, kind: "zero" }], aria: "Pattern surprise around broken and kept patterns"
+  });
+  lineChart($("viol-t"), {
+    x: NOFF2, xDomain: [-5, 10], yDomain: [0, 1], yTicks: [0, 0.5, 1], yBase: 0, yFmt: v => v.toFixed(1), height: 180, title: "Tension (checkpoints)",
+    xTicks: [-5, 0, 5, 10], xFmt: vfmt, tipX: v => `${vfmt(+v.toFixed(1))} from the motif's start`,
+    series: [{ label: "Broken pattern", values: Vc.broken.T, color: "--tension", width: 2.2 }, { label: "Kept pattern", values: Vc.kept.T, color: "--ink-2", width: 2 }],
+    markers: [{ x: 0, kind: "zero" }], aria: "Tension around broken and kept patterns"
+  });
+  $("struct-table").innerHTML = `<thead><tr><th></th><th class="n">Structured, checkpoints</th><th class="n">Structured, permadeath</th><th class="n">Random order, checkpoints</th></tr></thead><tbody>` +
+    `<tr><td>Uncertainty of the next motif (bits, of 2)</td><td class="n">${Mc.sequence.condEntropy.toFixed(2)}</td><td class="n">${Mp.sequence.condEntropy.toFixed(2)}</td><td class="n">${R.sequence.condEntropy.toFixed(2)}</td></tr>` +
+    `<tr><td>Pattern surprise, first 3 minutes → after (bits)</td><td class="n">${Mc.sequence.surprisalEarly.toFixed(2)} → ${Mc.sequence.surprisalLate.toFixed(2)}</td><td class="n">${Mp.sequence.surprisalEarly.toFixed(2)} → ${Mp.sequence.surprisalLate.toFixed(2)}</td><td class="n">${R.sequence.surprisalEarly.toFixed(2)} → ${R.sequence.surprisalLate.toFixed(2)}</td></tr>` +
+    `<tr><td>Surprise of a kept / broken pattern (bits)</td><td class="n">${Vc.keptBits.toFixed(1)} / ${Vc.brokenBits.toFixed(1)}</td><td class="n">${Vp.keptBits.toFixed(1)} / ${Vp.brokenBits.toFixed(1)}</td><td class="n">–</td></tr>` +
+    `<tr><td>Surprise of the motif after a broken pattern (bits)</td><td class="n">${Vc.nextBits.toFixed(1)}</td><td class="n">${Vp.nextBits.toFixed(1)}</td><td class="n">–</td></tr>` +
+    `<tr><td>Hits per appearance, kept / broken</td><td class="n">${f2(Vc.keptHits)} / ${f2(Vc.brokenHits)}</td><td class="n">${f2(Vp.keptHits)} / ${f2(Vp.brokenHits)}</td><td class="n">–</td></tr>` +
+    `<tr><td>Mean tension</td><td class="n">${f2(S.checkpoint.meanT)}</td><td class="n">${f2(S.permadeath.meanT)}</td><td class="n">${f2(R.meanT)}</td></tr>` +
+    `<tr><td>Repeating tension cycle</td><td class="n">${S.checkpoint.cycle ? S.checkpoint.cycle.lag + " s" : "none found"}</td><td class="n">${S.permadeath.cycle ? S.permadeath.cycle.lag + " s" : "none found"}</td><td class="n">${R.cycle ? R.cycle.lag + " s" : "none found"}</td></tr></tbody>`;
+  $("f-struct1").innerHTML = `Structure makes the game learnable. The next motif carries <b>${Mc.sequence.condEntropy.toFixed(2)} bits</b> of uncertainty with structured composition (checkpoints) against <b>${R.sequence.condEntropy.toFixed(2)}</b> in random order. The expectation model's surprise sits below random order for most of the session, rising back to it while a new form is being learned, then falling well below once the form is familiar. It falls further with permadeath (${Mp.sequence.surprisalEarly.toFixed(1)} to ${Mp.sequence.surprisalLate.toFixed(1)} bits) than with checkpoints (${Mc.sequence.surprisalEarly.toFixed(1)} to ${Mc.sequence.surprisalLate.toFixed(1)}), where new forms keep arriving and deaths replay old zones.`;
+  $("f-struct2").innerHTML = `Broken patterns register as surprise: a kept slot costs about <b>${Vc.keptBits.toFixed(1)} bit</b>, a broken one <b>${Vc.brokenBits.toFixed(1)}</b>, and the motif after it still costs ${Vc.nextBits.toFixed(1)}, because the break throws the expected phrase out of step. Bot tension also runs higher after broken patterns, but that is mostly danger, not surprise: the swapped-in motif is usually harder than A, landing ${f2(Vc.brokenHits)} hits per appearance against ${f2(Vc.keptHits)}. Whether a broken pattern feels tenser on its own is a question for rated sessions. Evenly spaced slots still did not produce a repeating tension cycle, because gates and deaths restart the phrase.`;
+})();
+
+/* ---------- Comparison ---------- */
+let cmpMode = "checkpoint";
+function comparison() {
+  const stack = $("cmp-stack");
+  for (let i = charts.length - 1; i >= 0; i--) if (stack.contains(charts[i].host)) charts.splice(i, 1);
+  stack.innerHTML = "";
+  const E = D.modes[cmpMode].excerpt, group = [];
+  const defs = [["T", "Our tension", "--tension"], ["ES", "Ely-style suspense", "--ink-2"], ["SU", "Ely-style surprise", "--ink-2"], ["I4", "Left 4 Dead-style intensity", "--ink-2"]];
+  defs.forEach(([k, title, color], i) => {
+    const h = document.createElement("div"); stack.appendChild(h);
+    lineChart(h, {
+      x: E.t, xDomain: [0, 120], yDomain: [0, 1], yTicks: [0, 1], yBase: 0, yFmt: v => String(v), height: i === defs.length - 1 ? 104 : 82, title,
+      noXAxis: i !== defs.length - 1, xTicks: [0, 20, 40, 60, 80, 100, 120], xFmt: t => `${Math.round(t)} s`,
+      series: [{ label: title, values: E[k], color, width: k === "T" ? 2.2 : 1.8, area: k === "T" }],
+      tip: j => defs.map(([kk, tt, cc]) => tipRow(cc, tt, f2(E[kk][j]))).join(""),
+      markers: E.events.filter(e => e.kind === "death").map(e => ({ x: e.t, kind: "death" })).concat(E.hits.map(t => ({ x: t, kind: "hit" }))),
+      group, aria: `${title}, ${ML[cmpMode]} excerpt`
+    });
+  });
+}
+$("cmp-cp").onclick = () => { cmpMode = "checkpoint"; $("cmp-cp").setAttribute("aria-pressed", "true"); $("cmp-pd").setAttribute("aria-pressed", "false"); comparison(); };
+$("cmp-pd").onclick = () => { cmpMode = "permadeath"; $("cmp-pd").setAttribute("aria-pressed", "true"); $("cmp-cp").setAttribute("aria-pressed", "false"); comparison(); };
+comparison();
+
+const CK = { T: "Tension", ES: "Suspense", SU: "Surprise", I4: "Intensity", Th: "Threat", U: "Uncertainty", Sn: "Stakes", X: "Pattern surp.", V: "Voices" };
+const CKS = { T: "Tens.", ES: "Susp.", SU: "Surp.", I4: "L4D", Th: "Thr.", U: "Unc.", Sn: "Stk.", X: "Patt.", V: "Voic." };
+function divColor(r) {
+  const neg = hexRgb(css("--div-neg")), mid = hexRgb(css("--div-mid").slice(0, 7)), pos = hexRgb(css("--div-pos"));
+  const t = Math.abs(clamp(r, -1, 1)), to = r < 0 ? neg : pos;
+  return mid.map((c, k) => Math.round(c + (to[k] - c) * t));
+}
+function corrMatrix(mode, id) {
+  const C = D.modes[mode].comparison, keys = C.keys;
+  const host = $(id);
+  mount(host, () => {
+    host.innerHTML = ""; host.classList.add("chart");
+    const W = host.clientWidth || 400, n = keys.length, labW = 92, top = 22;
+    const cell = Math.floor(Math.min(46, (W - labW) / n)), H = top + cell * n + 4;
+    const svg = el("svg", { width: W, height: H, role: "img", "aria-label": `Correlations between measures, ${ML[mode]}` }, host);
+    const tip = document.createElement("div"); tip.className = "tip"; tip.hidden = true; host.appendChild(tip);
+    keys.forEach((k, j) => el("text", { x: labW + j * cell + cell / 2, y: 13, class: "tick xtick", text: CKS[k] }, svg));
+    keys.forEach((a, i) => {
+      el("text", { x: labW - 6, y: top + i * cell + cell / 2, class: "tick ytick", text: CK[a] }, svg);
+      keys.forEach((b, j) => {
+        const r = C.corr[i][j], rgb = divColor(r), lum = (0.299 * rgb[0] + 0.587 * rgb[1] + 0.114 * rgb[2]) / 255;
+        const x0 = labW + j * cell, y0 = top + i * cell;
+        el("rect", { x: x0 + 1, y: y0 + 1, width: cell - 2, height: cell - 2, rx: 3, fill: `rgb(${rgb.join(",")})` }, svg);
+        if (cell >= 28) el("text", { x: x0 + cell / 2, y: y0 + cell / 2, class: "cell-txt", fill: lum > 0.55 ? "#1a1f33" : "#ffffff", text: r.toFixed(2).replace("0.", ".").replace("-.", "−.") }, svg);
+        const hr = el("rect", { x: x0, y: y0, width: cell, height: cell, class: "hit" }, svg);
+        hr.addEventListener("pointerenter", () => {
+          tip.innerHTML = `<div class="th">Correlation</div><div class="row"><span>${CK[a]} &times; ${CK[b]}</span><span class="v">${r.toFixed(2)}</span></div>`;
+          tip.hidden = false; const tw = tip.offsetWidth; tip.style.left = Math.min(W - tw, x0 + cell + 6) + "px"; tip.style.top = y0 + "px";
+        });
+        hr.addEventListener("pointerleave", () => tip.hidden = true);
+      });
+    });
+  });
+}
+corrMatrix("checkpoint", "corr-cp"); corrMatrix("permadeath", "corr-pd");
+(function cmpText() {
+  const c = D.modes.checkpoint.comparison, p = D.modes.permadeath.comparison, idx = k => c.keys.indexOf(k);
+  const r = (C, k) => C.corr[0][idx(k)];
+  $("lag-table").innerHTML = `<thead><tr><th>Measure compared with our tension</th><th class="n">r, checkpoints</th><th class="n">r, permadeath</th><th class="n">Lag, checkpoints</th><th class="n">Lag, permadeath</th></tr></thead><tbody>` +
+    [["ES", "Ely-style suspense"], ["SU", "Ely-style surprise"], ["I4", "Left 4 Dead-style intensity"], ["X", "Pattern surprise (motif expectation)"], ["V", "Motifs playing at once"]].map(([k, l]) => `<tr><td>${l}</td><td class="n">${f2(r(c, k))}</td><td class="n">${f2(r(p, k))}</td><td class="n">${c.lags[k].lag > 0 ? "+" : ""}${c.lags[k].lag.toFixed(1)} s</td><td class="n">${p.lags[k].lag > 0 ? "+" : ""}${p.lags[k].lag.toFixed(1)} s</td></tr>`).join("") +
+    `</tbody><tfoot><tr><td colspan="5" class="caption" style="white-space: normal; border: 0; padding-top: 10px">Lag is the shift that best lines the measure up with our tension. A positive lag means the measure rises after ours does.</td></tr></tfoot>`;
+  $("f-cmp1").innerHTML = `Our tension is, in practice, <b>Ely-style suspense</b>: the two correlate at <b>${f2(r(c, "ES"))}</b> with checkpoints and <b>${f2(r(p, "ES"))}</b> with permadeath, with no lag. Once stakes and uncertainty are known, multiplying in threat adds little. Our formula rediscovers Ely, Frankel and Kamenica's measure, with a heuristic uncertainty term.`;
+  $("f-cmp2").innerHTML = `The <b>Left 4 Dead-style intensity</b> is a different signal. It correlates only ${f2(r(c, "I4"))} and ${f2(r(p, "I4"))} with our tension and rises about <b>${Math.abs(c.lags.I4.lag).toFixed(1)}–${Math.abs(p.lags.I4.lag).toFixed(1)} s later</b>, because it reacts to damage, while futures-based measures react to danger. For ${pct(c.aftermathShare)} of checkpoint play and ${pct(p.aftermathShare)} of permadeath play, intensity is high while our tension is low: the aftermath of a hit. Surprise (${f2(r(c, "SU"))} and ${f2(r(p, "SU"))}) marks when the odds changed, not when they were close.`;
+})();
+})();
+</script>

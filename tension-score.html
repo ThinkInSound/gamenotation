@@ -1,0 +1,1449 @@
+<title>Tension Score</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap">
+<style>
+/* Layout: a conductor's desk. Masthead, then the stage (arena + live readout), then the score, the session and the method. */
+:root {
+  --paper: #f0f1f5;
+  --surface: #fafbfd;
+  --ink: #1a1f33;
+  --ink-2: #565d77;
+  --rule: #d5d8e2;
+  --arena: #e5e7ee;
+  --arena-grid: #d7dae4;
+  --prog: #008a7c;
+  --tension: #c3215c;
+  --threat: #b46100;
+  --unc: #5944bf;
+  --stakes: #2c6cb3;
+  --danger: #b2281f;
+  --display: "Instrument Serif", "Iowan Old Style", Georgia, serif;
+  --body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --rule: #2b2f3e;
+    --arena: #151821; --arena-grid: #20242f;
+    --prog: #1aa597; --tension: #e5457d; --threat: #c77a12; --unc: #8b74ee; --stakes: #4a8ddb; --danger: #ff6a5c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #11131a; --surface: #181b25; --ink: #e6e8f1; --ink-2: #a2a7bc; --rule: #2b2f3e;
+  --arena: #151821; --arena-grid: #20242f;
+  --prog: #1aa597; --tension: #e5457d; --threat: #c77a12; --unc: #8b74ee; --stakes: #4a8ddb; --danger: #ff6a5c;
+  color-scheme: dark;
+}
+html, body { background: var(--paper); color: var(--ink); }
+body { font-family: var(--body); font-size: 15px; line-height: 1.5; }
+.page {
+  max-width: 1180px; margin: 0 auto;
+  padding-block: 28px 72px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 40px;
+}
+.eyebrow, .label, .legend, .stat dt, .meter dt, .toolbar .hint {
+  font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2);
+}
+.masthead { display: grid; gap: 6px; }
+.masthead h1 {
+  font-family: var(--display); font-weight: 400; font-size: clamp(44px, 7.5vw, 80px);
+  line-height: .95; margin: 4px 0 6px; letter-spacing: -.01em; text-wrap: balance;
+}
+.masthead h1 em { color: var(--tension); }
+.lede { margin: 0; max-width: 64ch; color: var(--ink-2); font-size: 16px; }
+.lede code, .method code { font-family: var(--mono); font-size: .9em; color: var(--ink); }
+
+.stage { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: start; }
+@media (max-width: 880px) { .stage { grid-template-columns: minmax(0, 1fr); } }
+.arena-col { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 8px; overflow: hidden; background: var(--surface); }
+.seg button + button { border-left: 1px solid var(--rule); }
+button {
+  font: 500 13px/1 var(--body); color: var(--ink-2); background: var(--surface);
+  border: 0; padding: 9px 13px; cursor: pointer;
+}
+button:hover { color: var(--ink); }
+button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px solid var(--unc); outline-offset: 2px; }
+.solo { border: 1px solid var(--rule); border-radius: 8px; }
+.check { display: inline-flex; gap: 7px; align-items: center; font-size: 13px; color: var(--ink-2); cursor: pointer; }
+.check input { accent-color: var(--prog); width: 15px; height: 15px; }
+.spacer { flex: 1; }
+.arena-wrap { border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; background: var(--arena); }
+#game { display: block; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; touch-action: pan-y; }
+#game.playing { touch-action: none; cursor: crosshair; }
+.keys { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+.keys kbd, .rules kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px; background: var(--surface); color: var(--ink); }
+.rules { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.rules summary { cursor: pointer; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
+.rules ul { margin: 8px 0 2px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.rules b { color: var(--ink); font-weight: 600; }
+
+.readout {
+  background: var(--surface); border: 1px solid var(--rule); border-radius: 14px;
+  padding: 20px; display: flex; flex-direction: column; gap: 18px; min-width: 0;
+}
+.dyn { display: grid; grid-template-columns: auto 1fr; column-gap: 16px; align-items: end; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.dyn .label { grid-column: 1 / -1; }
+.dyn-mark {
+  font-family: var(--display); font-style: italic; font-size: 96px; line-height: .85;
+  color: var(--tension); min-width: 1.3em; transition: color .3s;
+}
+.dyn-word { font-family: var(--display); font-style: italic; font-size: 22px; color: var(--ink-2); padding-bottom: 8px; }
+.meters { margin: 0; display: flex; flex-direction: column; gap: 14px; }
+.meter { display: grid; grid-template-columns: 1fr auto; row-gap: 5px; column-gap: 10px; }
+.meter dt { align-self: baseline; }
+.meter dd { margin: 0; font-family: var(--mono); font-size: 15px; font-variant-numeric: tabular-nums; }
+.meter .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
+.meter .bar i { display: block; height: 100%; width: 0; border-radius: 3px; transition: width .12s linear; }
+.meter .def { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+.meter.big dd { font-size: 20px; }
+.status { font-size: 13px; line-height: 1.5; color: var(--ink-2); padding-top: 12px; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; min-height: calc(1.5em * 3 + 12px); box-sizing: border-box; }
+/* Text that changes while the game runs gets reserved space, so the panel never changes height. */
+.meter .def.live { min-height: calc(1.4em * 2); }
+.num-slot { display: inline-block; min-width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; }
+.status b { color: var(--ink); font-weight: 600; }
+
+.sec-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; margin-bottom: 12px; }
+.sec-head h2 { font-family: var(--display); font-weight: 400; font-size: 34px; margin: 0; line-height: 1; }
+.sec-head p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 70ch; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-bottom: 10px; text-transform: none; letter-spacing: .02em; font-size: 12px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { display: inline-block; width: 16px; height: 3px; border-radius: 2px; }
+.legend i.area { height: 9px; opacity: .45; }
+.legend i.bar { width: 2px; height: 12px; }
+.chart-box { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 6px 4px; }
+#score { display: block; width: 100%; height: 390px; }
+#overview { display: block; width: 100%; height: 130px; }
+@media (max-width: 560px) { #score { height: 330px; } }
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; margin: 0 0 12px; }
+.stat { background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.stat dt { font-size: 10.5px; }
+.stat dd { margin: 0; font-family: var(--mono); font-size: 20px; font-variant-numeric: tabular-nums; }
+.stat dd small { font-size: 12px; color: var(--ink-2); }
+
+.method .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 22px 32px; }
+.method h3 { font-family: var(--body); font-size: 14px; font-weight: 600; margin: 0 0 4px; display: flex; gap: 8px; align-items: center; }
+.method h3 i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.method p { margin: 0; color: var(--ink-2); font-size: 14px; max-width: 62ch; }
+.caveat { margin-top: 22px !important; padding-top: 16px; border-top: 1px solid var(--rule); font-size: 13px !important; }
+.refs { margin: 0; padding-left: 0; list-style: none; display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 36px; }
+.refs li { font-size: 13.5px; line-height: 1.45; max-width: 62ch; }
+.refs li .use { display: block; color: var(--ink-2); font-size: 12.5px; }
+.rate { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 12px; align-items: center; background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; }
+.rate .keys { grid-column: 1 / -1; }
+.rate input[type="range"] { width: 100%; accent-color: var(--ink); }
+.rate .num { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; }
+.tablewrap { overflow-x: auto; }
+.you-table { border-collapse: collapse; width: 100%; font-size: 13.5px; }
+.you-table th { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.you-table th, .you-table td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.you-table .n { text-align: right; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.you-table tr.best td { font-weight: 600; }
+.you-table tbody tr:last-child td { border-bottom: 0; }
+.you-table .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; }
+.you-table .barcell { width: 30%; min-width: 80px; }
+.you-table .rbar { display: block; height: 6px; border-radius: 3px; background: var(--ink-2); }
+button:disabled { opacity: .45; cursor: default; }
+#copy-fallback { width: 100%; min-height: 140px; font-family: var(--mono); font-size: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 8px; box-sizing: border-box; }
+@media (prefers-reduced-motion: reduce) { .meter .bar i, .dyn-mark { transition: none; } }
+</style>
+
+<div class="page">
+  <header class="masthead">
+    <p class="eyebrow">Game analysis theory &middot; live model</p>
+    <h1>Tension <em>Score</em></h1>
+    <p class="lede">A small arena game that measures itself while it is played. Each moment is scored like music: progress is the melody and tension is the dynamics, with <code>tension = stakes &times; threat &times; uncertainty</code>. Uncertainty comes from simulating 24 possible futures, which are drawn on the arena as faint trails.</p>
+  </header>
+
+  <section class="stage" aria-label="Game and live readout">
+    <div class="arena-col">
+      <div class="toolbar">
+        <div class="seg" role="group" aria-label="Who plays">
+          <button id="btn-bot" aria-pressed="true">Watch the bot</button>
+          <button id="btn-play" aria-pressed="false">Play yourself</button>
+        </div>
+        <div class="seg" role="group" aria-label="Speed">
+          <button id="btn-1x" aria-pressed="true">1&times;</button>
+          <button id="btn-4x" aria-pressed="false">4&times;</button>
+        </div>
+        <div class="seg" role="group" aria-label="What a death costs">
+          <button id="btn-check" aria-pressed="true">Checkpoints</button>
+          <button id="btn-perma" aria-pressed="false">Permadeath</button>
+        </div>
+        <div class="seg" role="group" aria-label="How motifs are composed">
+          <button id="btn-struct" aria-pressed="true">Structured</button>
+          <button id="btn-rand" aria-pressed="false">Random</button>
+        </div>
+      </div>
+      <div class="arena-wrap"><canvas id="game" tabindex="0" aria-label="Game arena. In play mode, move with WASD or the arrow keys and dash with Space."></canvas></div>
+      <div class="toolbar">
+        <label class="check"><input type="checkbox" id="chk-futures" checked> Show simulated futures</label>
+        <span class="spacer"></span>
+        <button id="btn-rate" class="solo" aria-pressed="false">Rate my tension</button>
+        <button id="btn-dash" class="solo" hidden>Dash</button>
+        <button id="btn-sound" class="solo" aria-pressed="false">Sound off</button>
+        <button id="btn-restart" class="solo">Restart</button>
+      </div>
+      <details class="rules" id="rules" open>
+        <summary>Rules</summary>
+        <ul>
+          <li><b>Goal.</b> Collect the five sparks to open the gate, then step into it. Each gate starts a new zone and clears every enemy.</li>
+          <li><b>Hearts.</b> You have five. A hit costs one, knocks you back, removes the enemy that hit you, and leaves you safe for 1 second while you blink. After a gate, a heal (+) may appear if you are hurt; it restores one heart.</li>
+          <li><b>Dash.</b> A burst of about three times normal speed for a fifth of a second. Nothing can hit you mid-dash. It recharges in 1.5 seconds, shown by the ring around you. The bot dashes the same way when an enemy gets close.</li>
+          <li><b>Death.</b> With checkpoints, every third gate is a safe point, and a death returns you to the last one. With permadeath, a death returns you to zone 1. Either way your hearts refill, and motifs you have already heard stay familiar.</li>
+          <li><b>Enemies.</b> A dashed ring shows where one is about to appear. Red triangles chase you and turn with some momentum. Amber diamonds fly straight and bounce off walls. Enemies fade, then vanish after a few seconds (motif enemies after 6). The longer you stay in a zone, the faster enemies arrive.</li>
+          <li><b>Motifs.</b> Enemies arrive in four patterns: A Pincer from two opposite edges, B Crossfire sweeping across in parallel lanes, C Stream in single file from one edge, and D Ring closing in around you. A new one is introduced every two zones. With Structured composition they repeat in a phrase you can learn, and now and then the pattern breaks.</li>
+          <li><b>Controls.</b> Press <b>Play yourself</b>, then use <kbd>WASD</kbd> or the arrow keys to move and <kbd>Space</kbd> to dash, or hold a finger where you want to go. The bot plays by exactly these rules.</li>
+        </ul>
+      </details>
+      <div class="rate" id="rate-box" hidden>
+        <label for="rate-range" class="label">Your tension</label>
+        <input type="range" id="rate-range" min="0" max="100" step="5" value="0">
+        <span class="num" id="rate-val">0.00</span>
+        <p class="keys">Raise it when it feels tense and lower it when it calms down: scroll over the arena, press <kbd>E</kbd> or <kbd>Q</kbd>, or drag the slider. While watching the bot, <kbd>&uarr;</kbd> and <kbd>&darr;</kbd> work too. Only the ups and downs count, not the exact level.</p>
+      </div>
+    </div>
+
+    <aside class="readout" aria-label="Live measurements">
+      <div class="dyn">
+        <span class="label">Dynamic marking</span>
+        <span class="dyn-mark" id="dyn">pp</span>
+        <span class="dyn-word" id="dyn-word">pianissimo</span>
+      </div>
+      <dl class="meters">
+        <div class="meter big">
+          <dt>Tension</dt><dd id="v-T">0.00</dd>
+          <span class="bar"><i id="b-T" style="background: var(--tension)"></i></span>
+          <p class="def">Geometric mean of the three below, so it is zero whenever any of them is zero.</p>
+        </div>
+        <div class="meter">
+          <dt>Stakes</dt><dd id="v-S">0.00</dd>
+          <span class="bar"><i id="b-S" style="background: var(--stakes)"></i></span>
+          <p class="def" id="d-S">Progress you would lose by dying now: <span id="lose" class="num-slot">0.0</span> zones.</p>
+        </div>
+        <div class="meter">
+          <dt>Threat</dt><dd id="v-Th">0.00</dd>
+          <span class="bar"><i id="b-Th" style="background: var(--threat)"></i></span>
+          <p class="def">Missing hearts, plus how close the enemies are.</p>
+        </div>
+        <div class="meter">
+          <dt>Uncertainty</dt><dd id="v-U">0.00</dd>
+          <span class="bar"><i id="b-U" style="background: var(--unc)"></i></span>
+          <p class="def"><span id="hits" class="num-slot">0</span> of 24 simulated futures get hit in the next 3 seconds. Highest at 12 of 24.</p>
+        </div>
+        <div class="meter">
+          <dt>Progress</dt><dd id="v-P">0.00</dd>
+          <span class="bar"><i id="b-P" style="background: var(--prog)"></i></span>
+          <p class="def">Zone number plus sparks collected. The bar is progress through this zone.</p>
+        </div>
+        <div class="meter">
+          <dt>Pattern surprise</dt><dd id="v-X">0.00</dd>
+          <span class="bar"><i id="b-X" style="background: var(--ink-2)"></i></span>
+          <p class="def">How unexpected the latest motifs were, judged by a model that learns the motif sequence as you play.</p>
+          <p class="def live" id="voices-now">No motifs playing.</p>
+        </div>
+        <div class="meter" id="m-you" hidden>
+          <dt>You</dt><dd id="v-R">0.00</dd>
+          <span class="bar"><i id="b-R" style="background: var(--ink)"></i></span>
+          <p class="def">Your own rating of how tense it feels.</p>
+        </div>
+      </dl>
+      <div class="status" id="status">Zone 1</div>
+    </aside>
+  </section>
+
+  <section aria-labelledby="score-h">
+    <div class="sec-head">
+      <h2 id="score-h">The score</h2>
+      <p>The last 60 seconds. Staff lines are zones, bar lines are gates, and a double bar marks a safe point.</p>
+    </div>
+    <div class="legend">
+      <span><i style="background: var(--prog)"></i>Progress (melody)</span>
+      <span><i class="area" style="background: var(--tension)"></i>Tension (dynamics)</span>
+      <span><i style="background: var(--stakes)"></i>Stakes</span>
+      <span><i style="background: var(--threat)"></i>Threat</span>
+      <span><i style="background: var(--unc)"></i>Uncertainty</span>
+      <span><i class="bar" style="background: var(--danger)"></i>Fall (death)</span>
+      <span><i class="area" style="background: var(--ink-2)"></i>sus. = suspension, res. = resolution</span>
+      <span id="lg-you" hidden><i style="background: var(--ink)"></i>You (your rating)</span>
+      <span><i class="area" style="background: var(--ink-2)"></i>Motif voices A&ndash;D: tick height is surprise, &prime; marks a variation, ! a broken pattern</span>
+    </div>
+    <div class="chart-box"><canvas id="score" aria-label="Scrolling chart of progress and tension over the last 60 seconds"></canvas></div>
+  </section>
+
+  <section aria-labelledby="session-h">
+    <div class="sec-head">
+      <h2 id="session-h">This session</h2>
+      <p>The whole playthrough so far. Switching who plays or the death rule starts a new session.</p>
+    </div>
+    <dl class="stats" id="stats">
+      <div class="stat"><dt>Time played</dt><dd id="s-time">0:00</dd></div>
+      <div class="stat"><dt>Furthest zone</dt><dd id="s-zone">1</dd></div>
+      <div class="stat"><dt>Deaths</dt><dd id="s-deaths">0</dd></div>
+      <div class="stat"><dt>Peak tension</dt><dd id="s-peak">0.00</dd></div>
+      <div class="stat"><dt>Mean tension</dt><dd id="s-mean">0.00</dd></div>
+      <div class="stat"><dt>Suspensions resolved</dt><dd id="s-sus">0 <small>of 0</small></dd></div>
+      <div class="stat"><dt>Tension cycle</dt><dd id="s-cycle"><small>needs 30 s</small></dd></div>
+    </dl>
+    <div class="chart-box"><canvas id="overview" aria-label="Whole-session chart of progress and tension"></canvas></div>
+  </section>
+
+  <section aria-labelledby="you-h" id="you-sec" hidden>
+    <div class="sec-head">
+      <h2 id="you-h">Which curve tracks you</h2>
+      <p id="you-status">Keep rating for a minute to see results.</p>
+    </div>
+    <div class="chart-box tablewrap"><table class="you-table" id="you-table"></table></div>
+    <h3 id="you-hab-h" hidden>Does a motif get less tense as it becomes familiar?</h3>
+    <p class="keys" id="you-hab-note" hidden></p>
+    <div class="chart-box tablewrap" id="you-hab-box" hidden><table class="you-table" id="you-hab"></table></div>
+    <p class="keys">Correlation compares only the shape of your line with each curve, so your absolute level does not matter. The lead allows for your reaction time: a curve that moves a second before you still counts as matching. Rating while watching the bot measures a spectator's tension, the case Ely-style suspense was designed for. Rating while playing measures a player's.</p>
+    <div class="toolbar"><button id="btn-copy" class="solo" disabled>Copy results</button><span class="keys" id="copy-msg">Copies a summary and your rated samples as text, ready to paste into a chat.</span></div>
+    <textarea id="copy-fallback" aria-label="Results text" hidden readonly></textarea>
+  </section>
+
+  <section class="method" aria-labelledby="method-h">
+    <div class="sec-head"><h2 id="method-h">How it is measured</h2></div>
+    <div class="grid">
+      <div>
+        <h3><i style="background: var(--prog)"></i>Progress, the melody</h3>
+        <p><code>P = zone + 0.8 &times; sparks / 5</code>, and entering the gate adds the last 0.2. Zones are the staff lines, so a run reads as a rising line, with a drop at each death.</p>
+      </div>
+      <div>
+        <h3><i style="background: var(--stakes)"></i>Stakes</h3>
+        <p>Progress since the last safe point, plus 0.25 for the time a death always costs, scaled as <code>1 &minus; e^(&minus;S/2.5)</code>. With checkpoints it forms a sawtooth. With permadeath it keeps climbing for the whole run.</p>
+      </div>
+      <div>
+        <h3><i style="background: var(--threat)"></i>Threat</h3>
+        <p><code>0.4 &times; missing hearts + 0.6 &times; pressure</code>. Pressure adds up every enemy, weighted by <code>e^(&minus;distance/55)</code>, with half weight for enemies still spawning.</p>
+      </div>
+      <div>
+        <h3><i style="background: var(--unc)"></i>Uncertainty</h3>
+        <p>About three times a second, the game copies its current state and plays it forward 24 times for 3 seconds, using the bot's movement with random variation. If <code>p</code> is the share of futures that avoid a hit, uncertainty is the binary entropy <code>H(p)</code>. It is 0 when every future agrees and 1 when they split evenly.</p>
+      </div>
+      <div>
+        <h3><i style="background: var(--tension)"></i>Tension</h3>
+        <p><code>T = (stakes &times; threat &times; uncertainty)^(1/3)</code>. It keeps the product's property that all three are needed, but stays on the same 0&ndash;1 scale as its parts. The marking follows <em>T</em>: <em>pp</em> under 0.15, then <em>p</em>, <em>mp</em>, <em>mf</em>, <em>f</em>, and <em>ff</em> above 0.75.</p>
+      </div>
+      <div>
+        <h3><i style="background: var(--ink-2)"></i>Suspension and resolution</h3>
+        <p>A suspension starts when progress has stalled for 2 seconds while threat rose by 0.15 or more and tension is above 0.35. It resolves when progress moves on, breaks on a hit, or fades if tension drops away. The tension cycle is the strongest repeat period in the tension curve, found by autocorrelation.</p>
+      </div>
+      <div>
+        <h3><i style="background: var(--ink-2)"></i>Motifs and pattern surprise</h3>
+        <p>Enemies arrive as four motifs: A Pincer, B Crossfire, C Stream and D Ring. A new motif is introduced every two zones, and a motif heard three or more times may return varied (A&prime;). With <b>Structured</b> composition, motifs follow a repeating phrase form that grows as motifs are unlocked: AAAA, then AABA (song form), ABAC, and ABACABAD (rondo). Slots are evenly spaced, the last slot of each phrase layers two motifs like a cadence, and once a form has been heard twice, each slot has a 12% chance of being swapped for an unexpected motif, marked ! on the score. <b>Random</b> composition picks motifs freely. Pattern surprise comes from a model that remembers the last three motifs, learns as you play, and scores <code>&minus;log&#8322; P(motif | recent motifs)</code>, added to a trace that fades over 2.5 seconds.</p>
+      </div>
+    </div>
+    <p class="caveat">These are first-guess weights, not validated ones. The simulated futures assume the player moves like the bot, so in play mode uncertainty measures how open the situation is for a typical player, not for you. Try the same session with checkpoints and then with permadeath: the threat curve stays similar, but stakes, and so tension, change shape.</p>
+  </section>
+
+  <section aria-labelledby="refs-h">
+    <div class="sec-head"><h2 id="refs-h">References</h2><p>The works these measures come from. The analysis page has the full list.</p></div>
+    <ol class="refs">
+      <li>Ely, J., Frankel, A., &amp; Kamenica, E. (2015). Suspense and surprise. <i>Journal of Political Economy</i>.<span class="use">Suspense as stakes times the spread of the next update to the odds; the measure tension turned out to match.</span></li>
+      <li>Booth, M. (2009). <i>The AI Systems of Left 4 Dead</i>. Keynote, AIIDE 2009.<span class="use">The Left 4 Dead-style intensity in the rating comparison.</span></li>
+      <li>Lerdahl, F. (2001). <i>Tonal Pitch Space</i>. Oxford University Press.<span class="use">Tension as distance from home; progress as distance from the start.</span></li>
+      <li>Browne, C. (2008). <i>Automatic Generation and Evaluation of Recombination Games</i>. PhD thesis, Queensland University of Technology.<span class="use">Measuring uncertainty from simulated play, as the simulated futures do.</span></li>
+      <li>Meyer, L. B. (1956). <i>Emotion and Meaning in Music</i>. University of Chicago Press.<span class="use">Emotion from expectations being set up, confirmed or broken: the idea behind motifs and broken patterns.</span></li>
+      <li>Huron, D. (2006). <i>Sweet Anticipation: Music and the Psychology of Expectation</i>. MIT Press.<span class="use">Expectation and surprise as measurable responses; the basis of pattern surprise.</span></li>
+      <li>Cleary, J. G., &amp; Witten, I. H. (1984). Data compression using adaptive coding and partial string matching. <i>IEEE Transactions on Communications</i>.<span class="use">The back-off over recent motifs in the expectation model.</span></li>
+      <li>Krichevsky, R. E., &amp; Trofimov, V. K. (1981). The performance of universal encoding. <i>IEEE Transactions on Information Theory</i>.<span class="use">The estimator at the base of the expectation model.</span></li>
+      <li>Cowan, N. (2001). The magical number 4 in short-term memory. <i>Behavioral and Brain Sciences</i>.<span class="use">Why layering more than three or four motifs may stop adding tension.</span></li>
+      <li>Koster, R. (2004). <i>A Theory of Fun for Game Design</i>. Paraglyph Press.<span class="use">Fun as learning patterns, the reason motifs are introduced one at a time.</span></li>
+      <li>Lopes, P., Yannakakis, G. N., &amp; Liapis, A. (2017). RankTrace: Relative and unbounded affect annotation. <i>Proceedings of ACII 2017</i>.<span class="use">Relative, continuous rating, as in the rating mode.</span></li>
+      <li>Hayashida, K. (2012). Interview on the level design of <i>Super Mario 3D Land</i>, <i>Gamasutra</i>.<span class="use">Introduce, develop, twist, conclude: the shape behind establishing and varying motifs.</span></li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+// CORE-START
+const W = 640, H = 480;
+const K = 5, MAXHP = 5, PR = 9, PSPEED = 175;
+const DASH_MULT = 3.1, DASH_T = 0.18, DASH_CD = 1.5;
+const RO_DT = 1 / 30, RO_N = 24, RO_H = 3.0;
+
+const rand = Math.random;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const d2 = (a, b) => { const dx = a.x - b.x, dy = a.y - b.y; return dx * dx + dy * dy; };
+function gauss() { let u = 0, v = 0; while (u === 0) u = rand(); while (v === 0) v = rand(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(6.283185307 * v); }
+
+function zoneParams(z, zt) {
+  const esc = Math.max(0.5, 1 - zt / 45);
+  return {
+    interval: Math.max(0.26, 1.15 * Math.pow(0.87, z)) * esc,
+    cap: Math.min(50, 7 + 3 * z),
+    chase: Math.min(172, 76 + 6.5 * z),
+    drift: Math.min(195, 90 + 7 * z),
+    drifterChance: Math.min(0.45, 0.18 + 0.03 * z)
+  };
+}
+function placeAway(px, py, minD, margin) {
+  margin = margin || 40;
+  for (let i = 0; i < 40; i++) {
+    const x = margin + rand() * (W - 2 * margin), y = margin + rand() * (H - 2 * margin);
+    if ((x - px) * (x - px) + (y - py) * (y - py) >= minD * minD) return { x, y };
+  }
+  return { x: clamp(W - px, margin, W - margin), y: clamp(H - py, margin, H - margin) };
+}
+function edgePointAway(px, py, minD) {
+  let q = null;
+  for (let i = 0; i < 20; i++) {
+    const side = Math.floor(rand() * 4), u = rand();
+    q = side === 0 ? { x: u * W, y: 8 } : side === 1 ? { x: u * W, y: H - 8 } : side === 2 ? { x: 8, y: u * H } : { x: W - 8, y: u * H };
+    if ((q.x - px) * (q.x - px) + (q.y - py) * (q.y - py) >= minD * minD) return q;
+  }
+  return q;
+}
+// Motifs: four designed encounter patterns. They are introduced one at a time (a new one every two zones),
+// recur, vary once familiar (seen 3+ times), and increasingly combine so several play at once.
+const MOTIFS = ["A", "B", "C", "D"];
+const MOTIF_NAMES = ["Pincer", "Crossfire", "Stream", "Ring"];
+const motifsUnlocked = z => Math.min(4, 1 + Math.floor(z / 2));
+const motifGap = (z, zt) => Math.max(2.6, 5.2 * Math.pow(0.92, z)) * Math.max(0.6, 1 - zt / 40);
+const MOTIF_LIFE = 6; // seconds before a motif's enemies fade, so each motif is a phrase with an end
+const voicesOf = s => { let m = 0; for (const a of s.pat.active) m |= 1 << a.ti; return (m & 1) + (m >> 1 & 1) + (m >> 2 & 1) + (m >> 3 & 1); };
+// Structured composition: phrases follow a form that grows with the motifs unlocked (AAAA, AABA song form,
+// ABAC, ABACABAD rondo), slots are evenly spaced, the last slot of each phrase layers two motifs (a cadence),
+// and once a form has been heard twice each slot may be swapped for an unexpected motif (a broken pattern).
+const FORMS = [[0, 0, 0, 0], [0, 0, 1, 0], [0, 1, 0, 2], [0, 1, 0, 2, 0, 1, 0, 3]];
+const FORM_NAMES = ["AAAA", "AABA", "ABAC", "ABACABAD"];
+const VIOLATION_RATE = 0.12;
+function launchMotif(s, ti, ev, together, violation, slot) {
+  const pat = s.pat, z = s.zone, p = s.pl, zp = zoneParams(z, s.zt);
+  const seen = pat.seen[ti], varied = seen >= 3 && rand() < 0.5, id = pat.n + 1;
+  let room = Math.max(0, zp.cap - s.en.length - s.pend.length), added = 0;
+  const add = (x, y, t, kind, extra) => { if (room <= 0) return; room--; added++; s.pend.push(Object.assign({ x: clamp(x, 10, W - 10), y: clamp(y, 10, H - 10), t, kind, pi: id, pt: ti, life: MOTIF_LIFE }, extra || {})); };
+  if (ti === 0) { // Pincer: chasers from two opposite edges at once
+    const n = 3 + Math.floor(z / 3) + (varied ? 2 : 0), horiz = rand() < 0.5;
+    for (let i = 0; i < n; i++) {
+      const side = i % 2, j = Math.floor(i / 2), off = (j - (Math.ceil(n / 2) - 1) / 2) * 38;
+      if (horiz) add(side ? W - 8 : 8, p.y + off, 0.9, 0); else add(p.x + off, side ? H - 8 : 8, 0.9, 0);
+    }
+  } else if (ti === 1) { // Crossfire: drifters sweep across in parallel lanes
+    const n = 4 + Math.floor(z / 4) + (varied ? 2 : 0), dir = Math.floor(rand() * 4), v = zp.drift * (varied ? 1.25 : 1);
+    for (let i = 0; i < n; i++) {
+      const off = (i - (n - 1) / 2) * 46;
+      if (dir === 0) add(8, p.y + off, 0.8 + i * 0.05, 1, { vx: v, vy: 0, life: 7 });
+      else if (dir === 1) add(W - 8, p.y + off, 0.8 + i * 0.05, 1, { vx: -v, vy: 0, life: 7 });
+      else if (dir === 2) add(p.x + off, 8, 0.8 + i * 0.05, 1, { vx: 0, vy: v, life: 7 });
+      else add(p.x + off, H - 8, 0.8 + i * 0.05, 1, { vx: 0, vy: -v, life: 7 });
+    }
+  } else if (ti === 2) { // Stream: single file from one edge point
+    const n = 4 + Math.floor(z / 3) + (varied ? 3 : 0), q = edgePointAway(p.x, p.y, 200);
+    for (let i = 0; i < n; i++) add(q.x, q.y, 0.8 + i * (varied ? 0.22 : 0.32), 0);
+  } else { // Ring: chasers appear in a circle around the player and close in
+    const n = 5 + Math.floor(z / 2) + (varied ? 3 : 0), R = varied ? 170 : 215, a0 = rand() * 6.283;
+    for (let i = 0; i < n; i++) { const a = a0 + i / n * 6.283; add(p.x + Math.cos(a) * R, p.y + Math.sin(a) * R, 1.2, 0); }
+  }
+  if (!added) return false;
+  pat.n = id; pat.seen[ti]++; pat.last = ti;
+  if (ev) { pat.active.push({ id, ti, t0: s.t, varied }); ev.push({ type: "motif", ti, id, n: seen + 1, varied, together, violation: !!violation, slot: slot == null ? -1 : slot }); }
+  return true;
+}
+function resetMotifs(s, ev) {
+  if (ev) for (const a of s.pat.active) ev.push({ type: "motifEnd", id: a.id, ti: a.ti });
+  s.pat.nextT = 0.9; s.pat.active.length = 0; s.pat.slot = 0; // each zone starts a fresh phrase
+}
+function newSparks(s) {
+  s.sparks = [];
+  for (let i = 0; i < K; i++) s.sparks.push(placeAway(s.pl.x, s.pl.y, 70));
+  s.collected = 0; s.gate = null;
+}
+function newState(rule, compose) {
+  const s = {
+    t: 0, zone: 0, zt: 0, collected: 0, sparks: [], gate: null, heal: null,
+    pl: { x: W / 2, y: H / 2, vx: 0, vy: 0, hp: MAXHP, inv: 0, dashT: 0, dashCd: 0 },
+    en: [], pend: [], spawnT: 3, bankZone: 0, rule, deaths: 0, maxZone: 0,
+    pat: { seen: [0, 0, 0, 0], n: 0, nextT: 0.9, active: [], last: -1, compose: compose || "structured", slot: 0, heard: 0, un: 1 }
+  };
+  newSparks(s);
+  return s;
+}
+const progress = s => s.zone + 0.8 * s.collected / K;
+const bankP = s => s.rule === "checkpoint" ? s.bankZone : 0;
+function clone(s) {
+  return {
+    t: s.t, zone: s.zone, zt: s.zt, collected: s.collected,
+    sparks: s.sparks.map(o => ({ x: o.x, y: o.y })),
+    gate: s.gate && { x: s.gate.x, y: s.gate.y }, heal: s.heal && { x: s.heal.x, y: s.heal.y },
+    pl: Object.assign({}, s.pl), en: s.en.map(e => Object.assign({}, e)), pend: s.pend.map(q => Object.assign({}, q)),
+    spawnT: s.spawnT, bankZone: s.bankZone, rule: s.rule, deaths: s.deaths, maxZone: s.maxZone,
+    pat: { seen: s.pat.seen.slice(), n: s.pat.n, nextT: s.pat.nextT, active: [], last: s.pat.last, compose: s.pat.compose, slot: s.pat.slot, heard: s.pat.heard, un: s.pat.un }
+  };
+}
+function enterGate(s, ev) {
+  s.zone++; s.zt = 0; s.maxZone = Math.max(s.maxZone, s.zone);
+  s.en.length = 0; s.pend.length = 0; s.spawnT = 3;
+  newSparks(s);
+  resetMotifs(s, ev);
+  s.heal = (s.pl.hp < MAXHP && rand() < 0.5) ? placeAway(s.pl.x, s.pl.y, 90) : null;
+  let banked = false;
+  if (s.rule === "checkpoint" && s.zone % 3 === 0) { s.bankZone = s.zone; banked = true; }
+  if (ev) ev.push({ type: "gate", zone: s.zone, banked });
+}
+function die(s, ev) {
+  const lost = progress(s) - bankP(s);
+  s.deaths++;
+  s.zone = s.rule === "checkpoint" ? s.bankZone : 0;
+  s.zt = 0; s.en.length = 0; s.pend.length = 0; s.spawnT = 3;
+  const p = s.pl;
+  p.hp = MAXHP; p.inv = 1.5; p.x = W / 2; p.y = H / 2; p.vx = 0; p.vy = 0; p.dashT = 0;
+  newSparks(s); s.heal = null;
+  resetMotifs(s, ev);
+  if (ev) ev.push({ type: "death", lost });
+}
+// Advances the world by dt. Returns flags: 1 = hit, 2 = entered gate, 4 = died.
+function step(s, dt, inp, ev) {
+  let flags = 0;
+  s.t += dt; s.zt += dt;
+  const p = s.pl, zp = zoneParams(s.zone, s.zt);
+  if (inp.dash && p.dashCd <= 0 && (inp.mx || inp.my)) { p.dashT = DASH_T; p.dashCd = DASH_CD; if (ev) ev.push({ type: "dash" }); }
+  p.dashT = Math.max(0, p.dashT - dt); p.dashCd = Math.max(0, p.dashCd - dt); p.inv = Math.max(0, p.inv - dt);
+  const sp = PSPEED * (p.dashT > 0 ? DASH_MULT : 1), k = Math.min(1, dt * 12);
+  p.vx += (inp.mx * sp - p.vx) * k; p.vy += (inp.my * sp - p.vy) * k;
+  p.x = clamp(p.x + p.vx * dt, PR, W - PR); p.y = clamp(p.y + p.vy * dt, PR, H - PR);
+
+  // Motifs carry the encounter design; a light trickle of single enemies is background texture.
+  const pat = s.pat;
+  pat.nextT -= dt;
+  if (pat.nextT <= 0 && pat.compose === "structured") {
+    const un = motifsUnlocked(s.zone);
+    if (un !== pat.un) { pat.un = un; pat.slot = 0; pat.heard = 0; } // a new form starts when a motif is unlocked
+    const form = FORMS[un - 1], pos = pat.slot % form.length;
+    let ti = form[pos], violation = false;
+    if (pat.heard >= 2 && un > 1 && rand() < VIOLATION_RATE) { let alt = Math.floor(rand() * un); if (alt === ti) alt = (alt + 1) % un; ti = alt; violation = true; }
+    const list = [ti];
+    if (pos === form.length - 1 && s.zone >= 2 && un > 1) { // cadence: layer the previous slot's motif
+      let b = form[(pos - 1 + form.length) % form.length];
+      if (b === ti) b = (ti + 1) % un;
+      list.push(b);
+    }
+    list.forEach((m, k) => launchMotif(s, m, ev, list.length, violation && k === 0, pos));
+    pat.slot++;
+    if (pat.slot % form.length === 0) pat.heard++;
+    pat.nextT = motifGap(s.zone, s.zt);
+  } else if (pat.nextT <= 0) {
+    const un = motifsUnlocked(s.zone), newest = un - 1;
+    let first;
+    if (pat.seen[newest] < 3 && rand() < 0.7) first = newest; // establishing the newest motif
+    else {
+      first = Math.floor(rand() * un);
+      if (first === pat.last && un > 1 && rand() < 0.6) first = (first + 1 + Math.floor(rand() * (un - 1))) % un;
+    }
+    const list = [first];
+    if (un > 1 && rand() < Math.min(0.55, 0.12 * s.zone)) { let b = Math.floor(rand() * un); if (b === first) b = (b + 1) % un; list.push(b); }
+    if (un > 2 && s.zone >= 5 && rand() < 0.2) { let c = Math.floor(rand() * un); while (list.indexOf(c) >= 0) c = (c + 1) % un; list.push(c); }
+    for (const ti of list) launchMotif(s, ti, ev, list.length);
+    pat.nextT = motifGap(s.zone, s.zt) * (0.8 + 0.4 * rand());
+  }
+  s.spawnT -= dt;
+  if (s.spawnT <= 0) {
+    s.spawnT = zp.interval * 2.6 * (0.7 + 0.6 * rand());
+    if (s.en.length + s.pend.length < zp.cap * 0.5) {
+      const q = edgePointAway(p.x, p.y, 170);
+      s.pend.push({ x: q.x, y: q.y, t: 0.7, kind: rand() < zp.drifterChance ? 1 : 0 });
+    }
+  }
+  for (let i = s.pend.length - 1; i >= 0; i--) {
+    const q = s.pend[i]; q.t -= dt;
+    if (q.t <= 0) {
+      s.pend.splice(i, 1);
+      if (q.kind === 1) {
+        let vx = q.vx, vy = q.vy;
+        if (vx === undefined) { const a = Math.atan2(p.y - q.y, p.x - q.x) + (rand() - 0.5) * 0.9; vx = Math.cos(a) * zp.drift; vy = Math.sin(a) * zp.drift; }
+        s.en.push({ x: q.x, y: q.y, vx, vy, kind: 1, life: q.life || 12, pi: q.pi, pt: q.pt });
+      } else s.en.push({ x: q.x, y: q.y, vx: 0, vy: 0, kind: 0, life: q.life || 14, pi: q.pi, pt: q.pt });
+    }
+  }
+  if (ev) { // motif instances end when their enemies are gone (only tracked outside the simulated futures)
+    for (let i = pat.active.length - 1; i >= 0; i--) {
+      const a = pat.active[i];
+      let alive = false;
+      for (const e of s.en) if (e.pi === a.id) { alive = true; break; }
+      if (!alive) for (const q of s.pend) if (q.pi === a.id) { alive = true; break; }
+      if (!alive || s.t - a.t0 > 14) { pat.active.splice(i, 1); ev.push({ type: "motifEnd", id: a.id, ti: a.ti }); }
+    }
+  }
+  const ke = Math.min(1, dt * 2.2);
+  for (let i = s.en.length - 1; i >= 0; i--) {
+    const e = s.en[i];
+    e.life -= dt;
+    if (e.life <= 0) { s.en.splice(i, 1); continue; }
+    if (e.kind === 0) {
+      const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
+      e.vx += (dx / d * zp.chase - e.vx) * ke; e.vy += (dy / d * zp.chase - e.vy) * ke;
+    }
+    e.x += e.vx * dt; e.y += e.vy * dt;
+    if (e.kind === 1) {
+      if (e.x < 7 || e.x > W - 7) { e.vx = -e.vx; e.x = clamp(e.x, 7, W - 7); }
+      if (e.y < 7 || e.y > H - 7) { e.vy = -e.vy; e.y = clamp(e.y, 7, H - 7); }
+    }
+    const r = PR + (e.kind === 0 ? 8 : 7), dx = p.x - e.x, dy = p.y - e.y;
+    if (dx * dx + dy * dy < r * r && p.inv <= 0 && p.dashT <= 0) {
+      p.hp--; p.inv = 1.0;
+      const d = Math.hypot(dx, dy) || 1; p.vx = dx / d * 420; p.vy = dy / d * 420;
+      s.en.splice(i, 1); flags |= 1;
+      if (ev) ev.push({ type: "hit", x: e.x, y: e.y, pi: e.pi, pt: e.pt });
+      if (p.hp <= 0) { die(s, ev); return flags | 4; }
+    }
+  }
+  for (let i = s.sparks.length - 1; i >= 0; i--) {
+    const o = s.sparks[i];
+    if (d2(p, o) < (PR + 8) * (PR + 8)) {
+      s.sparks.splice(i, 1); s.collected++;
+      if (ev) ev.push({ type: "spark", x: o.x, y: o.y });
+      if (s.collected >= K) { s.gate = placeAway(p.x, p.y, 170, 50); if (ev) ev.push({ type: "gateOpen" }); }
+    }
+  }
+  if (s.heal && d2(p, s.heal) < (PR + 9) * (PR + 9)) {
+    p.hp = Math.min(MAXHP, p.hp + 1);
+    if (ev) ev.push({ type: "heal", x: s.heal.x, y: s.heal.y });
+    s.heal = null;
+  }
+  if (s.gate && d2(p, s.gate) < (PR + 14) * (PR + 14)) { enterGate(s, ev); flags |= 2; }
+  return flags;
+}
+// The bot: seek the current goal, push away from nearby enemies and walls, dash when something is very close.
+function botInput(s, bias) {
+  const p = s.pl;
+  let target = null;
+  if (s.heal && p.hp <= 2) target = s.heal;
+  else if (s.gate) target = s.gate;
+  else { let bd = Infinity; for (const o of s.sparks) { const d = d2(p, o); if (d < bd) { bd = d; target = o; } } }
+  let ax = 0, ay = 0, near = Infinity;
+  if (target) { const dx = target.x - p.x, dy = target.y - p.y, d = Math.hypot(dx, dy) || 1; ax = dx / d; ay = dy / d; }
+  for (const e of s.en) {
+    const dx = p.x - e.x, dy = p.y - e.y, d = Math.hypot(dx, dy) || 1;
+    if (d < near) near = d;
+    if (d < 130) { const w = (1 - d / 130) * (1 - d / 130) * 2.6; ax += dx / d * w; ay += dy / d * w; }
+  }
+  const m = 60;
+  if (p.x < m) ax += (1 - p.x / m) * 1.2;
+  if (p.x > W - m) ax -= (1 - (W - p.x) / m) * 1.2;
+  if (p.y < m) ay += (1 - p.y / m) * 1.2;
+  if (p.y > H - m) ay -= (1 - (H - p.y) / m) * 1.2;
+  if (Math.hypot(ax, ay) < 0.05) return { mx: 0, my: 0, dash: false };
+  const a = Math.atan2(ay, ax) + bias;
+  return { mx: Math.cos(a), my: Math.sin(a), dash: near < 30 + PR && rand() < 0.8 };
+}
+// Monte Carlo: copy the state and play RO_N short futures. A future fails if the player is hit.
+function rollouts(s, wantPaths) {
+  let ok = 0;
+  const paths = wantPaths ? [] : null, steps = Math.round(RO_H / RO_DT);
+  for (let i = 0; i < RO_N; i++) {
+    const c = clone(s);
+    let bias = gauss() * 0.6, bt = 0, hit = false;
+    const pts = wantPaths ? [c.pl.x, c.pl.y] : null;
+    for (let k = 0; k < steps; k++) {
+      bt += RO_DT;
+      if (bt > 0.4) { bt = 0; bias = gauss() * 0.6; }
+      const f = step(c, RO_DT, botInput(c, bias), null);
+      if (pts && k % 3 === 2) pts.push(c.pl.x, c.pl.y);
+      if (f & 1) { hit = true; if (pts) pts.push(c.pl.x, c.pl.y); break; }
+      if (f & 2) break;
+    }
+    if (!hit) ok++;
+    if (paths) paths.push({ pts, hit });
+  }
+  return { p: ok / RO_N, paths };
+}
+const entropy = p => (p <= 0 || p >= 1) ? 0 : -(p * Math.log2(p) + (1 - p) * Math.log2(1 - p));
+function threatOf(s) {
+  const p = s.pl;
+  let raw = 0;
+  for (const e of s.en) raw += Math.exp(-Math.max(0, Math.hypot(p.x - e.x, p.y - e.y) - PR - 8) / 55);
+  for (const q of s.pend) raw += 0.5 * Math.exp(-Math.max(0, Math.hypot(p.x - q.x, p.y - q.y) - PR) / 55);
+  const pressure = 1 - Math.exp(-raw / 1.2);
+  return clamp(0.4 * (1 - p.hp / MAXHP) + 0.6 * pressure, 0, 1);
+}
+const stakesRaw = s => progress(s) - bankP(s) + 0.25;
+const stakesN = s => 1 - Math.exp(-stakesRaw(s) / 2.5);
+const tensionOf = (sn, th, u) => Math.cbrt(Math.max(0, sn * th * u));
+// Expectation: a variable-order model of the motif sequence that keeps learning as play goes on (Meyer/Huron-style).
+// It remembers up to the last 3 motifs, blending each longer context into the shorter one below it (PPM-style
+// back-off over a Krichevsky-Trofimov base), so it can learn forms like AABA. Surprisal = -log2 P(motif | context).
+const EXPECT_ORDER = 3;
+const newExpect = () => ({ hist: [], c: Array.from({ length: EXPECT_ORDER + 1 }, () => new Map()) });
+function expectSurprisal(m, ti) {
+  let p = 0.25;
+  for (let k = 0; k <= EXPECT_ORDER && k <= m.hist.length; k++) {
+    const row = m.c[k].get(m.hist.slice(m.hist.length - k).join(""));
+    const tot = row ? row[0] + row[1] + row[2] + row[3] : 0;
+    if (k === 0) p = ((row ? row[ti] : 0) + 0.5) / (tot + 2);
+    else if (row) p = (row[ti] + 2 * p) / (tot + 2);
+  }
+  for (let k = 0; k <= EXPECT_ORDER && k <= m.hist.length; k++) {
+    const key = m.hist.slice(m.hist.length - k).join("");
+    let row = m.c[k].get(key); if (!row) { row = [0, 0, 0, 0]; m.c[k].set(key, row); }
+    row[ti]++;
+  }
+  m.hist.push(ti); if (m.hist.length > EXPECT_ORDER) m.hist.shift();
+  return -Math.log2(p);
+}
+const SURPRISE_DECAY = 2.5, SURPRISE_BITS = 7; // trace decays over 2.5 s; 7 bits fills it
+// CORE-END
+if (typeof window === "undefined") {
+  module.exports = { W, H, newState, step, botInput, rollouts, entropy, threatOf, stakesN, tensionOf, progress, gauss, MOTIFS, MOTIF_NAMES, voicesOf, newExpect, expectSurprisal, SURPRISE_DECAY, SURPRISE_BITS, FORMS, FORM_NAMES, motifsUnlocked };
+  return;
+}
+
+/* ---------- App ---------- */
+const SIM_DT = 1 / 60, RO_EVERY = 0.33, SAMPLE_EVERY = 0.1;
+const $ = id => document.getElementById(id);
+const gameCanvas = $("game"), scoreCanvas = $("score"), overCanvas = $("overview");
+const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let mode = "bot", speed = 1, rule = "checkpoint", showFutures = true, compose = "structured";
+let s, hist, markers, susp, suspList, U_est, U_disp, hitsLast, paths, lastRoll, lastSample, wander, flashes, particles, rings, started, peakT, sumT, pRaw, pS, I4, youCache, xTrace, expectM, motifLog;
+
+function resetSession() {
+  s = newState(rule, compose);
+  hist = { t: [], P: [], S: [], Th: [], U: [], T: [], pS: [], ES: [], SU: [], I4: [], X: [], V: [], R: [] };
+  pRaw = 1; pS = 1; I4 = 0; youCache = null; xTrace = 0; expectM = newExpect(); motifLog = [];
+  markers = []; suspList = []; susp = null;
+  U_est = 0; U_disp = 0; hitsLast = 0; paths = []; lastRoll = -1; lastSample = -1;
+  wander = 0; flashes = []; particles = []; rings = []; started = mode === "bot"; peakT = 0; sumT = 0;
+  taught = new Set();
+  flash(mode === "bot" ? "Zone 1" : "Zone 1: collect the sparks", 2.2);
+  cycleCache = null;
+}
+
+/* Colours from the theme tokens */
+let C = {}, FONT_BODY = "sans-serif", FONT_MONO = "monospace", FONT_DISPLAY = "serif";
+function readColors() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ["paper", "surface", "ink", "ink-2", "rule", "arena", "arena-grid", "prog", "tension", "threat", "unc", "stakes", "danger"]) C[k] = cs.getPropertyValue("--" + k).trim();
+  FONT_BODY = cs.getPropertyValue("--body").trim(); FONT_MONO = cs.getPropertyValue("--mono").trim(); FONT_DISPLAY = cs.getPropertyValue("--display").trim();
+}
+function alpha(hex, a) {
+  const h = hex.replace("#", "");
+  const n = parseInt(h.length === 3 ? h.split("").map(c => c + c).join("") : h, 16);
+  return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+}
+readColors();
+if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener("change", readColors);
+new MutationObserver(readColors).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "class", "style"] });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(readColors);
+
+/* Input */
+const keys = new Set();
+let dashQueued = false;
+const pointer = { active: false, x: 0, y: 0, id: null };
+const GAME_KEYS = new Set(["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", "KeyW", "KeyA", "KeyS", "KeyD", "Space", "ShiftLeft", "ShiftRight"]);
+function keyTargetOk() { const ae = document.activeElement; return !ae || ae === document.body || ae === gameCanvas; }
+window.addEventListener("keydown", e => {
+  if (rating.on && keyTargetOk() && (e.code === "KeyE" || e.code === "KeyQ" || (mode === "bot" && (e.code === "ArrowUp" || e.code === "ArrowDown")))) {
+    e.preventDefault();
+    setRating(rating.v + (e.code === "KeyE" || e.code === "ArrowUp" ? 0.1 : -0.1));
+    return;
+  }
+  if (mode !== "play" || !GAME_KEYS.has(e.code) || !keyTargetOk()) return;
+  e.preventDefault();
+  if (e.code === "Space" || e.code.indexOf("Shift") === 0) { if (!e.repeat) dashQueued = true; }
+  else keys.add(e.code);
+});
+window.addEventListener("keyup", e => keys.delete(e.code));
+window.addEventListener("blur", () => keys.clear());
+function toWorld(e) { const r = gameCanvas.getBoundingClientRect(); return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H }; }
+gameCanvas.addEventListener("pointerdown", e => {
+  if (mode !== "play") return;
+  gameCanvas.focus({ preventScroll: true });
+  if (e.pointerType !== "mouse" && pointer.active && pointer.id !== e.pointerId) { dashQueued = true; return; }
+  pointer.active = true; pointer.id = e.pointerId; Object.assign(pointer, toWorld(e));
+  try { gameCanvas.setPointerCapture(e.pointerId); } catch (_) {}
+});
+gameCanvas.addEventListener("pointermove", e => { if (pointer.active && e.pointerId === pointer.id) Object.assign(pointer, toWorld(e)); });
+const endPointer = e => { if (e.pointerId === pointer.id) { pointer.active = false; pointer.id = null; } };
+gameCanvas.addEventListener("pointerup", endPointer);
+gameCanvas.addEventListener("pointercancel", endPointer);
+function playerInput() {
+  let mx = 0, my = 0;
+  if (keys.has("ArrowLeft") || keys.has("KeyA")) mx -= 1;
+  if (keys.has("ArrowRight") || keys.has("KeyD")) mx += 1;
+  if (keys.has("ArrowUp") || keys.has("KeyW")) my -= 1;
+  if (keys.has("ArrowDown") || keys.has("KeyS")) my += 1;
+  if (pointer.active) { const dx = pointer.x - s.pl.x, dy = pointer.y - s.pl.y, d = Math.hypot(dx, dy); if (d > 10) { mx = dx / d; my = dy / d; } }
+  const m = Math.hypot(mx, my);
+  if (m > 0) { mx /= m; my /= m; started = true; }
+  const dash = dashQueued; dashQueued = false;
+  return { mx, my, dash };
+}
+
+/* Sound: progress picks the scale degree of a drone, tension adds a detuned voice and a tritone */
+const audio = { ctx: null, on: false };
+const PENTA = [0, 2, 4, 7, 9];
+function degFreq(deg) { deg = Math.max(0, Math.floor(deg)) % 15; return 110 * Math.pow(2, (PENTA[deg % 5] + 12 * Math.floor(deg / 5)) / 12); }
+function audioInit() {
+  const AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return false;
+  const ctx = new AC();
+  const master = ctx.createGain(); master.gain.value = 0; master.connect(ctx.destination);
+  const filt = ctx.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = 400; filt.Q.value = 0.7; filt.connect(master);
+  const mk = (type, g) => { const o = ctx.createOscillator(); o.type = type; const gn = ctx.createGain(); gn.gain.value = g; o.connect(gn); gn.connect(filt); o.start(); return { o, g: gn }; };
+  audio.ctx = ctx; audio.master = master; audio.filt = filt;
+  audio.v1 = mk("triangle", 0.55); audio.v2 = mk("sawtooth", 0.16); audio.v3 = mk("sine", 0);
+  return true;
+}
+function audioSet(on) {
+  if (on && !audio.ctx && !audioInit()) return;
+  audio.on = on;
+  if (!audio.ctx) return;
+  const now = audio.ctx.currentTime;
+  if (on) { audio.ctx.resume(); audio.master.gain.setTargetAtTime(0.07, now, 0.2); }
+  else audio.master.gain.setTargetAtTime(0, now, 0.08);
+}
+function audioUpdate(P, T) {
+  if (!audio.on) return;
+  const now = audio.ctx.currentTime, f = degFreq(P);
+  audio.v1.o.frequency.setTargetAtTime(f, now, 0.08);
+  audio.v2.o.frequency.setTargetAtTime(f * 2, now, 0.08);
+  audio.v2.o.detune.setTargetAtTime(T * 48, now, 0.15);
+  audio.v3.o.frequency.setTargetAtTime(f * Math.pow(2, 6 / 12) * 2, now, 0.1);
+  audio.v3.g.gain.setTargetAtTime(T * T * 0.45, now, 0.15);
+  audio.filt.frequency.setTargetAtTime(260 + T * 2600, now, 0.12);
+}
+function blip(freq, when, dur, type, vol) {
+  if (!audio.on) return;
+  const ctx = audio.ctx, t = ctx.currentTime + (when || 0);
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type || "triangle"; o.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol || 0.12, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g); g.connect(audio.master); o.start(t); o.stop(t + dur + 0.05);
+}
+function soundEvent(ev) {
+  if (!audio.on) return;
+  const f = degFreq(progress(s));
+  if (ev.type === "spark") blip(f * 4 * Math.pow(2, PENTA[s.collected % 5] / 12), 0, 0.25, "sine", 0.1);
+  else if (ev.type === "gate") { const g = degFreq(s.zone); [1, 1.25, 1.5, 2].forEach((m, i) => blip(g * 2 * m, i * 0.07, 0.6, "triangle", 0.09)); }
+  else if (ev.type === "hit") { blip(90, 0, 0.18, "square", 0.08); blip(62, 0.02, 0.25, "sine", 0.14); }
+  else if (ev.type === "death") [1, 0.84, 0.71, 0.5].forEach((m, i) => blip(f * 2 * m, i * 0.12, 0.5, "sawtooth", 0.05));
+  else if (ev.type === "heal") blip(f * 3, 0, 0.3, "sine", 0.08);
+  else if (ev.type === "dash") { blip(f * 3, 0, 0.08, "triangle", 0.05); blip(f * 4, 0.04, 0.1, "triangle", 0.04); }
+}
+
+/* Session bookkeeping */
+function flash(text, dur, color, small) { flashes.push({ text, until: (s ? s.t : 0) + dur, color, small }); if (flashes.length > 3) flashes.shift(); }
+// Teaching through play: the first time a mechanic happens in a session, a caption explains it.
+let taught = new Set();
+function teach(key, text) { if (taught.has(key)) return; taught.add(key); flash(text, 3.4, "ink", true); }
+function burst(x, y, color, n, spd) {
+  if (reduceMotion) n = Math.ceil(n / 3);
+  for (let i = 0; i < n; i++) { const a = rand() * 6.283, v = spd * (0.4 + rand() * 0.8); particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.5 + rand() * 0.4, max: 0.9, color }); }
+}
+function handleEvent(ev) {
+  soundEvent(ev);
+  const t = s.t;
+  if (ev.type === "spark") burst(ev.x, ev.y, "prog", 12, 120);
+  else if (ev.type === "dash") teach("dash", "Dash: a short burst of speed. Nothing can hit a dashing player.");
+  else if (ev.type === "gateOpen") flash("Gate open", 1.4, "prog");
+  else if (ev.type === "gate") {
+    markers.push({ t, type: ev.banked ? "bank" : "bar", zone: ev.zone });
+    rings.push({ x: s.pl.x, y: s.pl.y, r: 10, grow: 900, life: 0.6, max: 0.6, color: "prog" });
+    flash(ev.banked ? `Zone ${ev.zone + 1}: safe point, progress banked` : `Zone ${ev.zone + 1}`, 2, "prog");
+  } else if (ev.type === "hit") {
+    markers.push({ t, type: "hit" });
+    burst(ev.x, ev.y, "danger", 10, 160);
+    rings.push({ x: s.pl.x, y: s.pl.y, r: 8, grow: 220, life: 0.35, max: 0.35, color: "danger" });
+    teach("hit", "Hit: one heart lost, knocked back, safe for 1 s while blinking.");
+    if (susp) endSusp("broken");
+  } else if (ev.type === "death") {
+    markers.push({ t, type: "death", lost: ev.lost });
+    flash(rule === "checkpoint" ? `Fell back to zone ${s.zone + 1}, lost ${ev.lost.toFixed(1)}` : `Run over, lost ${ev.lost.toFixed(1)}. Back to zone 1`, 2.6, "danger");
+  } else if (ev.type === "heal") { burst(ev.x, ev.y, "stakes", 8, 90); teach("heal", "Heal: one heart restored."); }
+  else if (ev.type === "motif") {
+    const bits = expectSurprisal(expectM, ev.ti);
+    xTrace = Math.min(1, xTrace + bits / SURPRISE_BITS);
+    motifLog.push({ t, t1: null, ti: ev.ti, id: ev.id, n: ev.n, varied: ev.varied, together: ev.together, bits, violation: ev.violation, slot: ev.slot });
+    if (ev.n === 1) flash(`New motif: ${MOTIFS[ev.ti]} ${MOTIF_NAMES[ev.ti]}`, 2.4, "ink");
+    // each motif sounds its own note; louder when it is more surprising
+    if (audio.on) blip(degFreq(progress(s)) * [2, 2.5, 3, 3.75][ev.ti], 0, 0.2, "sine", 0.03 + 0.07 * Math.min(1, bits / SURPRISE_BITS));
+  } else if (ev.type === "motifEnd") {
+    for (let i = motifLog.length - 1; i >= 0; i--) if (motifLog[i].id === ev.id) { motifLog[i].t1 = t; break; }
+  }
+}
+function endSusp(outcome) {
+  suspList.push({ t0: susp.t0, t1: s.t, outcome });
+  susp = null;
+}
+let cur = { P: 0, Sn: 0, Th: 0, U: 0, T: 0 };
+function sample() {
+  const h = hist;
+  // Comparison measures (same definitions as the analysis page): Ely-style suspense and surprise, Left 4 Dead-style intensity.
+  const n0 = h.t.length;
+  const es = cur.Sn * 2 * Math.sqrt(pS * (1 - pS));
+  const su = n0 >= 10 ? clamp(cur.Sn * Math.abs(pS - h.pS[n0 - 10]) * 2, 0, 1) : 0;
+  h.t.push(s.t); h.P.push(cur.P); h.S.push(cur.Sn); h.Th.push(cur.Th); h.U.push(cur.U); h.T.push(cur.T);
+  h.pS.push(pS); h.ES.push(es); h.SU.push(su); h.I4.push(I4); h.X.push(xTrace); h.V.push(voicesOf(s)); h.R.push(rating.on ? rating.v : NaN);
+  sumT += cur.T; if (cur.T > peakT) peakT = cur.T;
+  if (h.t.length > 36000) {
+    for (const k in h) h[k].splice(0, 6000);
+    const tMin = h.t[0];
+    markers = markers.filter(m => m.t >= tMin); suspList = suspList.filter(x => x.t1 >= tMin);
+    motifLog = motifLog.filter(x => x.t1 == null || x.t1 >= tMin);
+  }
+  const n = h.t.length;
+  if (susp) {
+    if (cur.P - susp.P0 >= 0.15) endSusp("res");
+    else if (cur.T < 0.18 || s.t - susp.t0 > 10) endSusp("faded");
+  } else if (n > 20) {
+    const dP = cur.P - h.P[n - 21];
+    let thMin = Infinity; for (let i = n - 21; i < n; i++) thMin = Math.min(thMin, h.Th[i]);
+    if (dP >= 0 && dP < 0.05 && cur.Th - thMin > 0.15 && cur.T > 0.35) susp = { t0: s.t, P0: cur.P };
+  }
+}
+function tick(dt) {
+  let inp;
+  if (mode === "bot") {
+    wander += -wander * 1.5 * dt + gauss() * 0.9 * Math.sqrt(dt);
+    inp = botInput(s, wander);
+  } else inp = started ? playerInput() : (playerInput(), { mx: 0, my: 0, dash: false });
+  if (mode === "play" && !started) return;
+  const ev = [];
+  step(s, dt, inp, ev);
+  for (const e of ev) { handleEvent(e); if (e.type === "hit") I4 = Math.min(1, I4 + 0.25); }
+  if (lastRoll < 0 || s.t - lastRoll >= RO_EVERY) {
+    const r = rollouts(s, showFutures);
+    U_est = entropy(r.p); hitsLast = Math.round((1 - r.p) * 24); paths = r.paths || []; lastRoll = s.t; pRaw = r.p;
+  }
+  U_disp += (U_est - U_disp) * Math.min(1, dt / 0.25);
+  pS += (pRaw - pS) * Math.min(1, dt / 0.25);
+  let nearRaw = 0;
+  for (const en of s.en) nearRaw += Math.exp(-Math.max(0, Math.hypot(s.pl.x - en.x, s.pl.y - en.y) - 17) / 55);
+  I4 = clamp(I4 + (0.25 * (1 - Math.exp(-nearRaw / 1.2)) - 0.35 * I4) * dt, 0, 1);
+  xTrace *= Math.exp(-dt / SURPRISE_DECAY);
+  cur.P = progress(s); cur.Sn = stakesN(s); cur.Th = threatOf(s); cur.U = U_disp; cur.T = tensionOf(cur.Sn, cur.Th, cur.U);
+  if (lastSample < 0 || s.t - lastSample >= SAMPLE_EVERY) { lastSample = s.t; sample(); }
+  for (let i = particles.length - 1; i >= 0; i--) { const q = particles[i]; q.life -= dt; if (q.life <= 0) { particles.splice(i, 1); continue; } q.x += q.vx * dt; q.y += q.vy * dt; q.vx *= 0.92; q.vy *= 0.92; }
+  for (let i = rings.length - 1; i >= 0; i--) { const q = rings[i]; q.life -= dt; q.r += q.grow * dt; if (q.life <= 0) rings.splice(i, 1); }
+}
+
+/* Drawing helpers */
+function fit(canvas) {
+  const dpr = Math.min(2, window.devicePixelRatio || 1), w = canvas.clientWidth, h = canvas.clientHeight;
+  if (!w || !h) return null;
+  const bw = Math.round(w * dpr), bh = Math.round(h * dpr);
+  if (canvas.width !== bw || canvas.height !== bh) { canvas.width = bw; canvas.height = bh; }
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h, dpr };
+}
+function star(ctx, x, y, r) {
+  ctx.beginPath();
+  for (let i = 0; i < 8; i++) { const a = i * Math.PI / 4 - Math.PI / 2, rr = i % 2 ? r * 0.38 : r; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); }
+  ctx.closePath();
+}
+function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+
+function drawGame() {
+  const f = fit(gameCanvas); if (!f) return;
+  const { ctx, w, dpr } = f, sc = w / W;
+  ctx.setTransform(dpr * sc, 0, 0, dpr * sc, 0, 0);
+  const t = s.t;
+  ctx.fillStyle = C.arena; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = C["arena-grid"]; ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let x = 40; x < W; x += 40) { ctx.moveTo(x, 0); ctx.lineTo(x, H); }
+  for (let y = 40; y < H; y += 40) { ctx.moveTo(0, y); ctx.lineTo(W, y); }
+  ctx.stroke();
+  if (rule === "checkpoint" && s.zone > 0 && s.zone === s.bankZone) { ctx.strokeStyle = alpha(C.prog, 0.55); ctx.lineWidth = 4; ctx.strokeRect(2, 2, W - 4, H - 4); }
+
+  if (showFutures) {
+    ctx.lineWidth = 1.4; ctx.lineJoin = "round";
+    for (const pth of paths) {
+      const pts = pth.pts; if (!pts || pts.length < 4) continue;
+      ctx.strokeStyle = alpha(pth.hit ? C.danger : C.prog, pth.hit ? 0.34 : 0.22);
+      ctx.beginPath(); ctx.moveTo(pts[0], pts[1]);
+      for (let i = 2; i < pts.length; i += 2) ctx.lineTo(pts[i], pts[i + 1]);
+      ctx.stroke();
+      const ex = pts[pts.length - 2], ey = pts[pts.length - 1];
+      ctx.fillStyle = alpha(pth.hit ? C.danger : C.prog, pth.hit ? 0.7 : 0.35);
+      if (pth.hit) { ctx.beginPath(); ctx.moveTo(ex - 3, ey - 3); ctx.lineTo(ex + 3, ey + 3); ctx.moveTo(ex + 3, ey - 3); ctx.lineTo(ex - 3, ey + 3); ctx.strokeStyle = alpha(C.danger, 0.7); ctx.stroke(); }
+      else { ctx.beginPath(); ctx.arc(ex, ey, 1.8, 0, 6.283); ctx.fill(); }
+    }
+  }
+  if (s.heal) {
+    const h = s.heal; ctx.fillStyle = C.stakes;
+    ctx.fillRect(h.x - 7, h.y - 2.5, 14, 5); ctx.fillRect(h.x - 2.5, h.y - 7, 5, 14);
+  }
+  const pulse = reduceMotion ? 1 : 1 + Math.sin(t * 5) * 0.12;
+  for (const o of s.sparks) {
+    ctx.fillStyle = alpha(C.prog, 0.18); ctx.beginPath(); ctx.arc(o.x, o.y, 13 * pulse, 0, 6.283); ctx.fill();
+    ctx.fillStyle = C.prog; star(ctx, o.x, o.y, 8 * pulse); ctx.fill();
+  }
+  if (s.gate) {
+    const g = s.gate, rot = reduceMotion ? 0 : t * 1.6;
+    ctx.strokeStyle = C.prog; ctx.lineWidth = 3;
+    ctx.setLineDash([7, 5]); ctx.lineDashOffset = -rot * 10;
+    ctx.beginPath(); ctx.arc(g.x, g.y, 17, 0, 6.283); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = alpha(C.prog, 0.22); ctx.beginPath(); ctx.arc(g.x, g.y, 12 * pulse, 0, 6.283); ctx.fill();
+  }
+  ctx.lineWidth = 1.5;
+  for (const q of s.pend) {
+    ctx.strokeStyle = alpha(q.kind ? C.threat : C.danger, 0.75); ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.arc(q.x, q.y, 6 + q.t * 16, 0, 6.283); ctx.stroke();
+  }
+  ctx.setLineDash([]);
+  for (const e of s.en) {
+    if (e.kind === 0) {
+      const a = Math.atan2(e.vy, e.vx);
+      ctx.globalAlpha = e.life < 1.5 ? Math.max(0.15, e.life / 1.5) : 1;
+      ctx.fillStyle = C.danger; ctx.beginPath();
+      ctx.moveTo(e.x + Math.cos(a) * 11, e.y + Math.sin(a) * 11);
+      ctx.lineTo(e.x + Math.cos(a + 2.45) * 9, e.y + Math.sin(a + 2.45) * 9);
+      ctx.lineTo(e.x + Math.cos(a - 2.45) * 9, e.y + Math.sin(a - 2.45) * 9);
+      ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+    } else {
+      ctx.fillStyle = e.life < 1.5 ? alpha(C.threat, Math.max(0.15, e.life / 1.5)) : C.threat;
+      ctx.beginPath(); ctx.moveTo(e.x, e.y - 9); ctx.lineTo(e.x + 8, e.y); ctx.lineTo(e.x, e.y + 9); ctx.lineTo(e.x - 8, e.y); ctx.closePath(); ctx.fill();
+    }
+  }
+  const p = s.pl;
+  if (p.dashT > 0) { // afterimages so a dash reads as a deliberate move
+    for (let g = 3; g >= 1; g--) { ctx.fillStyle = alpha(C.ink, 0.28 - g * 0.06); ctx.beginPath(); ctx.arc(p.x - p.vx * 0.02 * g, p.y - p.vy * 0.02 * g, PR - g, 0, 6.283); ctx.fill(); }
+  }
+  const blink = p.inv > 0 && Math.floor(t * 18) % 2 === 0;
+  ctx.globalAlpha = blink ? 0.35 : 1;
+  ctx.fillStyle = C.ink; ctx.beginPath(); ctx.arc(p.x, p.y, PR, 0, 6.283); ctx.fill();
+  ctx.strokeStyle = C.arena; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, PR - 3.5, 0, 6.283); ctx.stroke();
+  ctx.globalAlpha = 1;
+  if (p.dashCd > 0) { ctx.strokeStyle = alpha(C.ink, 0.4); ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(p.x, p.y, PR + 5, -Math.PI / 2, -Math.PI / 2 + 6.283 * (1 - p.dashCd / DASH_CD)); ctx.stroke(); }
+  for (const q of rings) { ctx.strokeStyle = alpha(C[q.color], Math.max(0, q.life / q.max) * 0.8); ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(q.x, q.y, q.r, 0, 6.283); ctx.stroke(); }
+  for (const q of particles) { ctx.fillStyle = alpha(C[q.color], Math.max(0, q.life / q.max)); ctx.beginPath(); ctx.arc(q.x, q.y, 2.2, 0, 6.283); ctx.fill(); }
+
+  // HUD
+  ctx.font = `600 15px ${FONT_BODY}`; ctx.textBaseline = "top"; ctx.textAlign = "left"; ctx.fillStyle = C.ink;
+  ctx.fillText(`Zone ${s.zone + 1}`, 14, 12);
+  for (let i = 0; i < MAXHP; i++) {
+    const x = 18 + i * 15, y = 40;
+    ctx.beginPath(); ctx.arc(x, y, 5, 0, 6.283);
+    if (i < p.hp) { ctx.fillStyle = C.tension; ctx.fill(); } else { ctx.strokeStyle = alpha(C["ink-2"], 0.6); ctx.lineWidth = 1.5; ctx.stroke(); }
+  }
+  ctx.font = `500 12px ${FONT_MONO}`; ctx.fillStyle = C["ink-2"];
+  ctx.fillText(`${"★".repeat(s.collected)}${"☆".repeat(K - s.collected)}`, 14, 52);
+  ctx.textAlign = "right";
+  ctx.fillText(mode === "bot" ? `BOT PLAYING ${speed}×` : "YOU ARE PLAYING", W - 14, 14);
+  ctx.fillText(rule === "checkpoint" ? `SAFE POINT: ZONE ${bankP(s) + 1}` : "PERMADEATH", W - 14, 30);
+  const live = flashes.filter(fl => fl.until > t);
+  ctx.textAlign = "center";
+  let fy = 16;
+  live.forEach(fl => {
+    const a = Math.min(1, (fl.until - t) / 0.4);
+    ctx.font = fl.small ? `500 15px ${FONT_BODY}` : `italic 26px ${FONT_DISPLAY}`;
+    if (fl.small) { // captions get a backing so they read over the action
+      const tw = ctx.measureText(fl.text).width;
+      ctx.fillStyle = alpha(C.surface, 0.85 * a); roundRect(ctx, W / 2 - tw / 2 - 10, fy - 4, tw + 20, 24, 6); ctx.fill();
+    }
+    ctx.fillStyle = alpha(C[fl.color || "ink"] || C.ink, a);
+    ctx.fillText(fl.text, W / 2, fy);
+    fy += fl.small ? 28 : 30;
+  });
+  if (mode === "play" && !started) {
+    ctx.fillStyle = alpha(C.surface, 0.92); roundRect(ctx, W / 2 - 190, H / 2 - 62, 380, 124, 12); ctx.fill();
+    ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = C.ink; ctx.font = `italic 28px ${FONT_DISPLAY}`; ctx.fillText("Your turn", W / 2, H / 2 - 48);
+    ctx.font = `400 13px ${FONT_BODY}`; ctx.fillStyle = C["ink-2"];
+    ctx.fillText("Collect 5 sparks, then step into the gate.", W / 2, H / 2 - 10);
+    ctx.fillText("WASD or arrows to move, Space to dash.", W / 2, H / 2 + 10);
+    ctx.fillText("On touch: hold a finger where you want to go.", W / 2, H / 2 + 30);
+  }
+}
+
+function idxAt(arr, t) { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < t) lo = m + 1; else hi = m; } return lo; }
+function fmtTime(sec) { sec = Math.max(0, Math.floor(sec)); return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`; }
+
+function drawScore() {
+  const f = fit(scoreCanvas); if (!f) return;
+  const { ctx, w, h } = f, win = 60;
+  ctx.clearRect(0, 0, w, h);
+  const padL = 44, padR = 14, t1 = Math.max(win, s.t), t0 = t1 - win;
+  const X = t => padL + (t - t0) / win * (w - padL - padR);
+  const top = { y0: 18, y1: Math.round(h * 0.30) }, vl = { y0: Math.round(h * 0.36), y1: Math.round(h * 0.53) }, bot = { y0: Math.round(h * 0.60), y1: h - 24 };
+  const rh = (vl.y1 - vl.y0) / 4;
+  const H_ = hist, i0 = Math.max(0, idxAt(H_.t, t0) - 1), n = H_.t.length;
+  let minP = Infinity, maxP = -Infinity;
+  for (let i = i0; i < n; i++) { minP = Math.min(minP, H_.P[i]); maxP = Math.max(maxP, H_.P[i]); }
+  if (!isFinite(minP)) { minP = 0; maxP = 0; }
+  const lo = Math.floor(minP), hi = Math.max(lo + 4, Math.ceil(maxP + 0.25));
+  const YP = v => top.y1 - (v - lo) / (hi - lo) * (top.y1 - top.y0);
+  const YT = v => bot.y1 - v * (bot.y1 - bot.y0);
+
+  ctx.font = `500 10px ${FONT_MONO}`; ctx.textBaseline = "middle";
+  // staff lines = zones
+  ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.fillStyle = C["ink-2"]; ctx.textAlign = "right";
+  for (let z = lo; z <= hi; z++) { const y = Math.round(YP(z)) + 0.5; ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(`Z${z + 1}`, padL - 8, y); }
+  // tension lane guides
+  [0, 0.5, 1].forEach(v => { const y = Math.round(YT(v)) + 0.5; ctx.strokeStyle = alpha(C.rule, v === 0 ? 1 : 0.6); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke(); ctx.fillText(v.toFixed(1), padL - 8, y); });
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillStyle = C["ink-2"]; ctx.fillText("PROGRESS", padL + 2, top.y0 - 6); ctx.fillText("TENSION", padL + 2, bot.y0 - 6); ctx.fillText("MOTIFS", padL + 2, vl.y0 - 6);
+
+  // motif voices, like a piano roll: one row per motif, a bar while it plays, a tick at its start as tall as its surprise
+  ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  for (let r = 0; r < 4; r++) {
+    ctx.fillStyle = C["ink-2"]; ctx.fillText(MOTIFS[r], padL - 8, vl.y0 + rh * (r + 0.5));
+    const y = Math.round(vl.y0 + rh * (r + 1)) + 0.5;
+    ctx.strokeStyle = alpha(C.rule, 0.6); ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(w - padR, y); ctx.stroke();
+  }
+  const lastLbl = [-1e9, -1e9, -1e9, -1e9];
+  ctx.textAlign = "left";
+  for (const m of motifLog) {
+    const te = m.t1 == null ? s.t : m.t1;
+    if (te < t0) continue;
+    const xa = Math.max(padL, X(m.t)), xb = X(te), y = vl.y0 + rh * m.ti + 2, bh = rh - 4;
+    ctx.fillStyle = alpha(C["ink-2"], 0.3); ctx.fillRect(xa, y, Math.max(2, xb - xa), bh);
+    if (m.t >= t0) {
+      const tk = Math.max(3, bh * Math.min(1, m.bits / SURPRISE_BITS));
+      ctx.fillStyle = C.ink; ctx.fillRect(X(m.t) - 1, y + bh - tk, 2, tk);
+      if (X(m.t) - lastLbl[m.ti] > 30 && bh >= 9) {
+        ctx.fillStyle = C.ink; ctx.font = `500 ${Math.min(11, bh)}px ${FONT_MONO}`;
+        ctx.fillText(MOTIFS[m.ti] + (m.varied ? "′" : "") + (m.violation ? "!" : "") + (m.n === 1 ? " new" : ""), X(m.t) + 4, y + bh / 2);
+        lastLbl[m.ti] = X(m.t);
+      }
+    }
+  }
+  ctx.font = `500 10px ${FONT_MONO}`; ctx.textBaseline = "alphabetic";
+
+  // suspensions
+  for (const sp of suspList.concat(susp ? [{ t0: susp.t0, t1: s.t, outcome: "open" }] : [])) {
+    if (sp.t1 < t0) continue;
+    const xa = Math.max(padL, X(sp.t0)), xb = X(sp.t1);
+    ctx.fillStyle = alpha(C["ink-2"], 0.12); ctx.fillRect(xa, bot.y0, Math.max(2, xb - xa), bot.y1 - bot.y0);
+    ctx.font = `italic 13px ${FONT_DISPLAY}`; ctx.fillStyle = C["ink-2"]; ctx.textAlign = "left";
+    if (X(sp.t0) >= padL) ctx.fillText("sus.", xa + 2, bot.y0 + 12);
+    if (sp.outcome !== "open") {
+      const lab = sp.outcome === "res" ? "res." : sp.outcome === "broken" ? "broken" : "faded";
+      ctx.fillStyle = sp.outcome === "res" ? C.prog : sp.outcome === "broken" ? C.danger : C["ink-2"];
+      ctx.textAlign = "right"; ctx.fillText(lab, Math.min(w - padR, xb + 30), bot.y0 + 26);
+    }
+  }
+  // bar lines
+  ctx.font = `500 10px ${FONT_MONO}`;
+  for (const m of markers) {
+    if (m.t < t0) continue;
+    const x = Math.round(X(m.t)) + 0.5;
+    if (m.type === "bar" || m.type === "bank") {
+      ctx.strokeStyle = alpha(C.ink, 0.55); ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(x, top.y0); ctx.lineTo(x, bot.y1); ctx.stroke();
+      if (m.type === "bank") { ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(x + 3.5, top.y0); ctx.lineTo(x + 3.5, bot.y1); ctx.stroke(); ctx.fillStyle = C.prog; ctx.textAlign = "left"; ctx.fillText("BANKED", x + 7, top.y0 + 8); }
+    } else if (m.type === "death") {
+      ctx.strokeStyle = C.danger; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(x, top.y0); ctx.lineTo(x, bot.y1); ctx.stroke();
+      ctx.fillStyle = C.danger; ctx.textAlign = "left"; ctx.fillText(`FALL −${m.lost.toFixed(1)}`, x + 5, top.y1 - 6);
+    } else if (m.type === "hit") {
+      ctx.strokeStyle = C.danger; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(x, bot.y1); ctx.lineTo(x, bot.y1 + 7); ctx.stroke();
+    }
+  }
+  if (n > 1) {
+    // tension area
+    ctx.beginPath(); ctx.moveTo(X(H_.t[i0]), YT(0));
+    for (let i = i0; i < n; i++) ctx.lineTo(X(H_.t[i]), YT(H_.T[i]));
+    ctx.lineTo(X(H_.t[n - 1]), YT(0)); ctx.closePath();
+    ctx.fillStyle = alpha(C.tension, 0.22); ctx.fill();
+    const line = (arr, Y, color, lw, dash) => {
+      ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.setLineDash(dash || []); ctx.beginPath();
+      for (let i = i0; i < n; i++) { const x = X(H_.t[i]), y = Y(arr[i]); if (i === i0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+      ctx.stroke(); ctx.setLineDash([]);
+    };
+    line(H_.S, YT, alpha(C.stakes, 0.9), 1.2);
+    line(H_.Th, YT, alpha(C.threat, 0.9), 1.2);
+    line(H_.U, YT, alpha(C.unc, 0.75), 1.1);
+    line(H_.T, YT, C.tension, 2.2);
+    // your rating, with gaps where you were not rating
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 2.2; ctx.beginPath();
+    let pen = false;
+    for (let i = i0; i < n; i++) {
+      const v = H_.R[i];
+      if (v !== v) { pen = false; continue; }
+      const x = X(H_.t[i]), y = YT(v);
+      if (pen) ctx.lineTo(x, y); else { ctx.moveTo(x, y); pen = true; }
+    }
+    ctx.stroke();
+    line(H_.P, YP, C.prog, 2.6);
+    // endpoints
+    const xe = X(H_.t[n - 1]);
+    ctx.fillStyle = C.prog; ctx.beginPath(); ctx.arc(xe, YP(H_.P[n - 1]), 4, 0, 6.283); ctx.fill();
+    ctx.fillStyle = C.tension; ctx.beginPath(); ctx.arc(xe, YT(H_.T[n - 1]), 4, 0, 6.283); ctx.fill();
+  }
+  // time axis
+  ctx.fillStyle = C["ink-2"]; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic"; ctx.font = `500 10px ${FONT_MONO}`;
+  for (let tt = Math.ceil(t0 / 10) * 10; tt <= t1; tt += 10) ctx.fillText(fmtTime(tt), X(tt), h - 6);
+}
+
+function drawOverview() {
+  const f = fit(overCanvas); if (!f) return;
+  const { ctx, w, h } = f;
+  ctx.clearRect(0, 0, w, h);
+  const H_ = hist, n = H_.t.length, padL = 44, padR = 14, y0 = 14, y1 = h - 22;
+  const tEnd = Math.max(60, s.t), tStart = n ? H_.t[0] : 0;
+  const X = t => padL + (t - tStart) / Math.max(1, tEnd - tStart) * (w - padL - padR);
+  let maxP = 1; for (let i = 0; i < n; i++) maxP = Math.max(maxP, H_.P[i]);
+  const YP = v => y1 - v / Math.ceil(maxP + 0.2) * (y1 - y0), YT = v => y1 - v * (y1 - y0);
+  ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(padL, y1 + 0.5); ctx.lineTo(w - padR, y1 + 0.5); ctx.stroke();
+  ctx.font = `500 10px ${FONT_MONO}`; ctx.fillStyle = C["ink-2"]; ctx.textAlign = "right"; ctx.textBaseline = "middle";
+  ctx.fillText(`Z${Math.ceil(maxP + 0.2) + 1}`, padL - 8, y0); ctx.fillText("Z1", padL - 8, y1);
+  if (n > 1) {
+    const step = Math.max(1, Math.floor(n / (w * 1.5)));
+    ctx.beginPath(); ctx.moveTo(X(H_.t[0]), YT(0));
+    for (let i = 0; i < n; i += step) ctx.lineTo(X(H_.t[i]), YT(H_.T[i]));
+    ctx.lineTo(X(H_.t[n - 1]), YT(0)); ctx.closePath(); ctx.fillStyle = alpha(C.tension, 0.25); ctx.fill();
+    ctx.strokeStyle = C.prog; ctx.lineWidth = 2; ctx.beginPath();
+    for (let i = 0; i < n; i += step) { const x = X(H_.t[i]), y = YP(H_.P[i]); if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y); }
+    ctx.lineTo(X(H_.t[n - 1]), YP(H_.P[n - 1])); ctx.stroke();
+    ctx.strokeStyle = C.ink; ctx.lineWidth = 1.5; ctx.beginPath();
+    let pen = false;
+    for (let i = 0; i < n; i += step) {
+      const v = H_.R[i];
+      if (v !== v) { pen = false; continue; }
+      if (pen) ctx.lineTo(X(H_.t[i]), YT(v)); else { ctx.moveTo(X(H_.t[i]), YT(v)); pen = true; }
+    }
+    ctx.stroke();
+  }
+  for (const m of markers) if (m.type === "death" || m.type === "bank") {
+    const x = Math.round(X(m.t)) + 0.5;
+    ctx.strokeStyle = m.type === "death" ? C.danger : alpha(C.ink, 0.5); ctx.lineWidth = m.type === "death" ? 1.5 : 1;
+    ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, y1); ctx.stroke();
+  }
+  ctx.fillStyle = C["ink-2"]; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.fillText(fmtTime(tStart), padL, h - 6); ctx.textAlign = "right"; ctx.fillText(fmtTime(tEnd), w - padR, h - 6);
+}
+
+/* Dominant tension cycle by autocorrelation (10 Hz samples, lags 3-60 s) */
+let cycleCache = null;
+function dominantCycle() {
+  const T = hist.T, n0 = T.length;
+  if (n0 < 300) return null;
+  const n = Math.min(n0, 2400), st = n0 - n;
+  let mean = 0; for (let i = 0; i < n; i++) mean += T[st + i]; mean /= n;
+  const x = new Float32Array(n); let v = 0;
+  for (let i = 0; i < n; i++) { x[i] = T[st + i] - mean; v += x[i] * x[i]; }
+  if (v < 1e-4) return { none: true };
+  const maxL = Math.min(600, Math.floor(n / 2)), r = new Float32Array(maxL + 2);
+  for (let L = 1; L <= maxL + 1 && L < n; L++) { let acc = 0; for (let i = 0; i + L < n; i++) acc += x[i] * x[i + L]; r[L] = acc / v * n / (n - L); }
+  let L0 = 1; while (L0 < maxL && r[L0] > 0) L0++;
+  let best = 0, bestR = 0.2;
+  for (let L = Math.max(L0, 30); L <= maxL; L++) if (r[L] > bestR && r[L] >= r[L - 1] && r[L] >= r[L + 1]) { bestR = r[L]; best = L; }
+  return best ? { period: best / 10, r: bestR } : { none: true };
+}
+
+const DYN = [[0.15, "pp", "pianissimo"], [0.3, "p", "piano"], [0.45, "mp", "mezzo-piano"], [0.6, "mf", "mezzo-forte"], [0.75, "f", "forte"], [2, "ff", "fortissimo"]];
+let lastUi = 0, lastSlow = 0, lastAudio = 0;
+function updateUi(now) {
+  if (now - lastUi > 90) {
+    lastUi = now;
+    const set = (k, v, frac) => { $("v-" + k).textContent = v; $("b-" + k).style.width = (clamp(frac, 0, 1) * 100).toFixed(1) + "%"; };
+    set("T", cur.T.toFixed(2), cur.T); set("S", cur.Sn.toFixed(2), cur.Sn); set("Th", cur.Th.toFixed(2), cur.Th); set("U", cur.U.toFixed(2), cur.U);
+    set("P", cur.P.toFixed(2), cur.P - Math.floor(cur.P));
+    set("X", xTrace.toFixed(2), xTrace);
+    const act = []; for (const a of s.pat.active) if (act.indexOf(a.ti) < 0) act.push(a.ti);
+    act.sort();
+    $("voices-now").textContent = (act.length ? `Playing: ${act.map(ti => `${MOTIFS[ti]} ${MOTIF_NAMES[ti]}`).join(", ")}.` : "No motifs playing.") +
+      (s.pat.compose === "structured" ? ` Form ${FORM_NAMES[s.pat.un - 1]}.` : " Random order.");
+    $("lose").textContent = Math.max(0, cur.P - bankP(s)).toFixed(1);
+    $("hits").textContent = hitsLast;
+    const d = DYN.find(x => cur.T < x[0]);
+    if ($("dyn").textContent !== d[1]) { $("dyn").textContent = d[1]; $("dyn-word").textContent = d[2]; }
+    const nextBank = (Math.floor(s.zone / 3) + 1) * 3;
+    $("status").innerHTML = `<b>Zone ${s.zone + 1}</b> &middot; ${s.pl.hp} of ${MAXHP} hearts &middot; ${s.collected} of ${K} sparks &middot; ` +
+      (rule === "checkpoint" ? `next safe point at zone ${nextBank + 1}` : `permadeath, the whole run is at stake`);
+  }
+  if (now - lastSlow > 500) {
+    lastSlow = now;
+    $("s-time").textContent = fmtTime(s.t);
+    $("s-zone").textContent = s.maxZone + 1;
+    $("s-deaths").textContent = s.deaths;
+    $("s-peak").textContent = peakT.toFixed(2);
+    $("s-mean").textContent = (hist.T.length ? sumT / hist.T.length : 0).toFixed(2);
+    const res = suspList.filter(x => x.outcome === "res").length;
+    $("s-sus").innerHTML = `${res} <small>of ${suspList.length}</small>`;
+    if (!cycleCache || now - cycleCache.at > 2000) cycleCache = { at: now, v: dominantCycle() };
+    const cy = cycleCache.v;
+    $("s-cycle").innerHTML = !cy ? `<small>needs 30 s</small>` : cy.none ? `<small>no clear cycle</small>` : `${cy.period.toFixed(1)} s <small>r ${cy.r.toFixed(2)}</small>`;
+    drawOverview();
+    if (rating.used && now - youAt > 3000) { youAt = now; renderYou(); }
+  }
+  if (now - lastAudio > 50) { lastAudio = now; audioUpdate(cur.P, cur.T); }
+}
+
+/* Controls */
+function press(groupIds, activeId) { for (const id of groupIds) $(id).setAttribute("aria-pressed", String(id === activeId)); }
+function refocus() { if (mode === "play") gameCanvas.focus({ preventScroll: true }); }
+$("btn-bot").onclick = () => { if (mode === "bot") return; mode = "bot"; press(["btn-bot", "btn-play"], "btn-bot"); setModeUi(); resetSession(); };
+$("btn-play").onclick = () => { if (mode === "play") return; mode = "play"; press(["btn-bot", "btn-play"], "btn-play"); setModeUi(); resetSession(); refocus(); };
+$("btn-1x").onclick = () => { speed = 1; press(["btn-1x", "btn-4x"], "btn-1x"); refocus(); };
+$("btn-4x").onclick = () => { speed = 4; press(["btn-1x", "btn-4x"], "btn-4x"); refocus(); };
+$("btn-check").onclick = () => { if (rule === "checkpoint") return; rule = "checkpoint"; press(["btn-check", "btn-perma"], "btn-check"); resetSession(); refocus(); };
+$("btn-perma").onclick = () => { if (rule === "permadeath") return; rule = "permadeath"; press(["btn-check", "btn-perma"], "btn-perma"); resetSession(); refocus(); };
+$("btn-struct").onclick = () => { if (compose === "structured") return; compose = "structured"; press(["btn-struct", "btn-rand"], "btn-struct"); resetSession(); refocus(); };
+$("btn-rand").onclick = () => { if (compose === "random") return; compose = "random"; press(["btn-struct", "btn-rand"], "btn-rand"); resetSession(); refocus(); };
+$("chk-futures").onchange = e => { showFutures = e.target.checked; if (!showFutures) paths = []; refocus(); };
+$("btn-restart").onclick = () => { resetSession(); refocus(); };
+$("btn-dash").onclick = () => { dashQueued = true; refocus(); };
+$("btn-sound").onclick = () => { const on = !audio.on; audioSet(on); $("btn-sound").setAttribute("aria-pressed", String(audio.on)); $("btn-sound").textContent = audio.on ? "Sound on" : "Sound off"; refocus(); };
+
+/* Rating: the viewer's own felt tension. Relative, so only its ups and downs matter. */
+const rating = { on: false, v: 0, used: false };
+let youAt = 0;
+function setRating(v) {
+  rating.v = clamp(Math.round(v * 20) / 20, 0, 1);
+  $("rate-range").value = String(Math.round(rating.v * 100));
+  $("rate-val").textContent = rating.v.toFixed(2);
+  $("v-R").textContent = rating.v.toFixed(2);
+  $("b-R").style.width = (rating.v * 100).toFixed(0) + "%";
+}
+function setRatingOn(on) {
+  rating.on = on;
+  if (on) { rating.used = true; youAt = 0; }
+  $("btn-rate").setAttribute("aria-pressed", String(on));
+  $("btn-rate").textContent = on ? "Stop rating" : "Rate my tension";
+  $("rate-box").hidden = !on; $("m-you").hidden = !on;
+  $("lg-you").hidden = !rating.used; $("you-sec").hidden = !rating.used;
+}
+$("btn-rate").onclick = () => { setRatingOn(!rating.on); refocus(); };
+$("rate-range").addEventListener("input", e => setRating(Number(e.target.value) / 100));
+gameCanvas.addEventListener("wheel", e => { if (!rating.on) return; e.preventDefault(); setRating(rating.v + (e.deltaY < 0 ? 0.05 : -0.05)); }, { passive: false });
+
+function pearsonArr(a, b) {
+  const n = a.length; if (n < 2) return 0;
+  let ma = 0, mb = 0; for (let i = 0; i < n; i++) { ma += a[i]; mb += b[i]; } ma /= n; mb /= n;
+  let sab = 0, saa = 0, sbb = 0;
+  for (let i = 0; i < n; i++) { const x = a[i] - ma, y = b[i] - mb; sab += x * y; saa += x * x; sbb += y * y; }
+  return saa > 0 && sbb > 0 ? sab / Math.sqrt(saa * sbb) : 0;
+}
+const YOU_CURVES = [["T", "Our tension", "--tension"], ["ES", "Ely-style suspense", "--ink-2"], ["SU", "Ely-style surprise", "--ink-2"], ["I4", "Left 4 Dead-style intensity", "--ink-2"], ["Th", "Threat", "--threat"], ["U", "Uncertainty", "--unc"], ["S", "Stakes", "--stakes"], ["X", "Pattern surprise", "--ink-2"], ["V", "Motifs playing at once", "--ink-2"]];
+function youResults() {
+  const h = hist, idx = [];
+  for (let i = 0; i < h.R.length; i++) if (h.R[i] === h.R[i]) idx.push(i);
+  if (idx.length < 600) return { need: Math.ceil((600 - idx.length) / 10), have: idx.length / 10 };
+  let lo = Infinity, hi = -Infinity;
+  for (const i of idx) { lo = Math.min(lo, h.R[i]); hi = Math.max(hi, h.R[i]); }
+  if (hi - lo < 0.1) return { flat: true, have: idx.length / 10 };
+  // Each curve may lead your rating by up to 3 s, to allow for reaction time.
+  const rows = YOU_CURVES.map(([k, label, color]) => {
+    let best = { r: -2, lag: 0 };
+    for (let L = 0; L <= 30; L += 2) {
+      const a = [], b = [];
+      for (const i of idx) { const j = i - L; if (j >= 0) { a.push(h.R[i]); b.push(h[k][j]); } }
+      const r = pearsonArr(a, b);
+      if (r > best.r) best = { r, lag: L / 10 };
+    }
+    return { k, label, color, r: best.r, lag: best.lag };
+  }).sort((x, y) => y.r - x.r);
+  return { rows, have: idx.length / 10 };
+}
+function renderYou() {
+  const res = youResults(); youCache = res;
+  if (res.need != null) {
+    $("you-status").textContent = `Keep rating: ${res.need} more seconds needed (you have ${Math.round(res.have)}).`;
+    $("you-table").innerHTML = ""; $("btn-copy").disabled = true; return;
+  }
+  if (res.flat) {
+    $("you-status").textContent = "Your rating has barely moved. Raise it when things feel tense and lower it when they calm down.";
+    $("you-table").innerHTML = ""; $("btn-copy").disabled = true; return;
+  }
+  const best = res.rows[0];
+  $("you-status").innerHTML = `Based on ${Math.round(res.have)} seconds of rating. ` + (best.r >= 0.3
+    ? `The closest match is <b>${best.label}</b> (r = ${best.r.toFixed(2)}), moving about ${best.lag.toFixed(1)} s ahead of your rating.`
+    : `None of the curves tracks you closely yet (best r = ${best.r.toFixed(2)}).`);
+  $("you-table").innerHTML = `<thead><tr><th>Curve</th><th class="n">Correlation with you</th><th class="n">Lead over you</th><th></th></tr></thead><tbody>` +
+    res.rows.map((r, i) => `<tr${i === 0 ? ' class="best"' : ""}><td><span class="sw" style="background: var(${r.color})"></span>${r.label}</td><td class="n">${r.r.toFixed(2)}</td><td class="n">${r.lag.toFixed(1)} s</td><td class="barcell"><span class="rbar" style="width: ${(Math.max(0, r.r) * 100).toFixed(0)}%"></span></td></tr>`).join("") + "</tbody>";
+  $("btn-copy").disabled = false;
+  renderHabituation();
+}
+// Habituation: your rating during each appearance of a motif, relative to your average rating.
+const HAB_BINS = [[1, 1, "1st"], [2, 2, "2nd"], [3, 3, "3rd"], [4, 6, "4th–6th"], [7, 1e9, "7th+"]];
+function habituation() {
+  const h = hist, rated = [];
+  for (let i = 0; i < h.R.length; i++) if (h.R[i] === h.R[i]) rated.push(h.R[i]);
+  if (rated.length < 600) return null;
+  const meanR = rated.reduce((a, b) => a + b, 0) / rated.length;
+  const cells = MOTIFS.map(() => HAB_BINS.map(() => [])), broken = [], kept = [];
+  for (const m of motifLog) {
+    const te = m.t1 == null ? s.t : m.t1, a = idxAt(h.t, m.t), b = idxAt(h.t, te);
+    let sum = 0, cnt = 0, ok = b > a;
+    for (let i = a; i < b; i++) { const v = h.R[i]; if (v !== v) { ok = false; break; } sum += v; cnt++; }
+    if (!ok || !cnt) continue;
+    const bi = HAB_BINS.findIndex(([lo, hi]) => m.n >= lo && m.n <= hi);
+    cells[m.ti][bi].push(sum / cnt - meanR);
+    if (m.slot >= 0 && m.together === 1) (m.violation ? broken : kept).push(sum / cnt - meanR);
+  }
+  return { cells, broken, kept };
+}
+function renderHabituation() {
+  const res = habituation(), show = !!res, cells = res && res.cells;
+  $("you-hab-h").hidden = !show; $("you-hab-note").hidden = !show; $("you-hab-box").hidden = !show;
+  if (!show) return;
+  const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+  const fmt = v => (v >= 0 ? "+" : "−") + Math.abs(v).toFixed(2);
+  $("you-hab").innerHTML = `<thead><tr><th>Motif</th>${HAB_BINS.map(b => `<th class="n">${b[2]}</th>`).join("")}</tr></thead><tbody>` +
+    MOTIFS.map((m, ti) => `<tr><td>${m} ${MOTIF_NAMES[ti]}</td>${cells[ti].map(c => `<td class="n">${c.length ? `${fmt(avg(c))} <span style="color: var(--ink-3)">(${c.length})</span>` : "–"}</td>`).join("")}</tr>`).join("") + "</tbody>";
+  const early = [], late = [];
+  cells.forEach(row => { early.push(...row[0], ...row[1]); late.push(...row[3], ...row[4]); });
+  let note = "Each cell is your average rating while that motif was playing, minus your overall average, with the number of appearances in brackets. ";
+  if (early.length >= 3 && late.length >= 3) {
+    const d = avg(early) - avg(late);
+    note += Math.abs(d) < 0.03 ? `So far your tension is about the same on first and second hearings as from the fourth on (${fmt(d)}).`
+      : d > 0 ? `So far your tension is ${d.toFixed(2)} higher on first and second hearings than from the fourth on, which is what habituation would predict.`
+      : `So far your tension is ${Math.abs(d).toFixed(2)} lower on first and second hearings than from the fourth on, the opposite of habituation. Later appearances also come in harder zones and with more layering.`;
+  } else note += "A comparison of early and late appearances needs at least three of each.";
+  if (res.broken.length >= 3 && res.kept.length >= 3) {
+    const d = avg(res.broken) - avg(res.kept);
+    note += ` During broken patterns (marked !) your tension was ${Math.abs(d) < 0.03 ? "about the same as" : `${Math.abs(d).toFixed(2)} ${d > 0 ? "higher" : "lower"} than`} during kept ones (${res.broken.length} broken, ${res.kept.length} kept).`;
+  } else if (compose === "structured") note += " A comparison of broken and kept patterns needs at least three broken ones; they are rare by design.";
+  $("you-hab-note").textContent = note;
+}
+function resultsText() {
+  const h = hist, res = youCache && youCache.rows ? youCache : youResults();
+  const lines = [
+    `Tension Score rating session, ${new Date().toISOString()}`,
+    `Who played: ${mode === "bot" ? "bot (spectator rating)" : "you (player rating)"}; death rule: ${rule}; rated seconds: ${Math.round(res.have || 0)}`,
+    "", "curve,r,lead_s"
+  ];
+  if (res.rows) for (const r of res.rows) lines.push(`${r.k},${r.r.toFixed(3)},${r.lag.toFixed(1)}`);
+  lines.push("", `composition: ${compose}`, "motif,start_s,end_s,appearance,varied,together,broken_pattern,slot,surprise_bits");
+  for (const m of motifLog) lines.push([MOTIFS[m.ti], m.t.toFixed(1), m.t1 == null ? "" : m.t1.toFixed(1), m.n, m.varied ? 1 : 0, m.together, m.violation ? 1 : 0, m.slot, m.bits.toFixed(2)].join(","));
+  lines.push("", "t,P,T,ES,SU,I4,Th,U,S,X,V,R");
+  for (let i = 0; i < h.t.length; i += 5) if (h.R[i] === h.R[i]) lines.push([h.t[i].toFixed(1), h.P[i].toFixed(2)].concat(["T", "ES", "SU", "I4", "Th", "U", "S", "X", "V", "R"].map(k => h[k][i].toFixed(3))).join(","));
+  return lines.join("\n");
+}
+$("btn-copy").onclick = () => {
+  const text = resultsText(), fb = $("copy-fallback");
+  const fallback = () => { fb.hidden = false; fb.value = text; fb.focus(); fb.select(); $("copy-msg").textContent = "Copying is blocked here. The text below is selected: press Ctrl+C."; };
+  try {
+    navigator.clipboard.writeText(text).then(() => { fb.hidden = true; $("copy-msg").textContent = "Copied. Paste it into a chat or a note."; }, fallback);
+  } catch (_) { fallback(); }
+};
+function setModeUi() {
+  const play = mode === "play";
+  gameCanvas.classList.toggle("playing", play);
+  $("btn-dash").hidden = !play;
+  $("btn-1x").disabled = play; $("btn-4x").disabled = play;
+  $("btn-4x").style.opacity = play ? 0.45 : ""; $("btn-1x").style.opacity = play ? 0.45 : "";
+}
+
+/* Main loop */
+resetSession(); setModeUi();
+let last = performance.now(), acc = 0;
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  acc += dt * (mode === "bot" ? speed : 1);
+  let n = 0;
+  while (acc >= SIM_DT && n < 20) { acc -= SIM_DT; n++; tick(SIM_DT); }
+  if (n >= 20) acc = 0;
+  drawGame(); drawScore(); updateUi(now);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+})();
+</script>

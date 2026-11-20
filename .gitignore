@@ -1,0 +1,9 @@
+# Machine-specific editor and preview settings
+.claude/
+
+# Generated standalone copies: rebuild with `node tools/build-local.js`
+local/
+
+node_modules/
+.DS_Store
+Thumbs.db
