@@ -44,21 +44,26 @@ body { margin: 0; }
 body { font-family: var(--body); font-size: 15px; line-height: 1.5; }
 .page {
   max-width: 1180px; margin: 0 auto;
-  padding-block: 28px 72px;
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
-  display: flex; flex-direction: column; gap: 40px;
 }
+/* Three screens, each at least one window tall: the game and its live readout, the score, then definitions and references. */
+html { scroll-snap-type: y proximity; }
+.screen { min-height: 100svh; box-sizing: border-box; padding-block: 22px 40px; display: flex; flex-direction: column; gap: 32px; scroll-snap-align: start; }
+.screen + .screen { border-top: 1px solid var(--rule); padding-top: 40px; }
+.screen-play { gap: 18px; padding-bottom: 22px; }
 .eyebrow, .label, .legend, .stat dt, .meter dt, .toolbar .hint {
   font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2);
 }
-.masthead { display: grid; gap: 6px; }
+.masthead { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px 40px; align-items: end; }
+.mast-title { display: grid; gap: 2px; }
 .masthead h1 {
-  font-family: var(--display); font-weight: 400; font-size: clamp(44px, 7.5vw, 80px);
-  line-height: .95; margin: 4px 0 6px; letter-spacing: -.01em; text-wrap: balance;
+  font-family: var(--display); font-weight: 400; font-size: clamp(40px, 4.4vw, 56px);
+  line-height: .95; margin: 2px 0 0; letter-spacing: -.01em; white-space: nowrap;
 }
+@media (max-width: 760px) { .masthead { grid-template-columns: minmax(0, 1fr); } }
 .masthead h1 em { color: var(--tension); }
-.lede { margin: 0; max-width: 64ch; color: var(--ink-2); font-size: 16px; }
+.lede { margin: 0; max-width: 78ch; color: var(--ink-2); font-size: 14px; line-height: 1.45; }
 .lede code, .method code { font-family: var(--mono); font-size: .9em; color: var(--ink); }
 
 .stage { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; align-items: start; }
@@ -78,10 +83,10 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 /* Control hierarchy: the game choice is the top level; session settings are small labelled controls; utilities sit under the game. */
 .game-tabs { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px 40px; border-bottom: 1px solid var(--rule); }
 .game-tab {
-  background: none; border: 0; padding: 0 0 12px; position: relative; text-align: left; line-height: 1;
-  font-family: var(--display); font-size: clamp(32px, 4.6vw, 46px); font-weight: 400; color: var(--ink-3);
+  background: none; border: 0; padding: 0 0 10px; position: relative; text-align: left; line-height: 1;
+  font-family: var(--display); font-size: clamp(30px, 3.4vw, 40px); font-weight: 400; color: var(--ink-3);
 }
-.game-tab small { display: block; margin-top: 6px; font: 400 13px/1.35 var(--body); color: var(--ink-3); }
+.game-tab small { display: block; margin-top: 4px; font: 400 12.5px/1.35 var(--body); color: var(--ink-3); }
 .game-tab:hover, .game-tab:hover small { color: var(--ink-2); }
 .game-tab[aria-pressed="true"] { background: none; color: var(--ink); }
 .game-tab[aria-pressed="true"] small { color: var(--ink-2); }
@@ -98,38 +103,40 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 .check { display: inline-flex; gap: 7px; align-items: center; font-size: 13px; color: var(--ink-2); cursor: pointer; }
 .check input { accent-color: var(--prog); width: 15px; height: 15px; }
 .spacer { flex: 1; }
-.arena-wrap { border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; background: var(--arena); }
-#game { display: block; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; touch-action: pan-y; }
+.arena-wrap { min-width: 0; }
+#game { display: block; width: 100%; aspect-ratio: 4 / 3; max-width: 100%; touch-action: pan-y; border: 1px solid var(--rule); border-radius: 12px; background: var(--arena); box-sizing: border-box; }
 #game.playing { touch-action: none; cursor: crosshair; }
 .keys { margin: 0; font-size: 12.5px; color: var(--ink-2); }
 .keys kbd, .rules kbd { font-family: var(--mono); font-size: 11px; border: 1px solid var(--rule); border-radius: 4px; padding: 1px 5px; background: var(--surface); color: var(--ink); }
-.rules { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 14px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
-.rules summary { cursor: pointer; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
-.rules ul { margin: 8px 0 2px; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.rules { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; font-size: 13px; line-height: 1.5; color: var(--ink-2); }
+.rules summary { cursor: pointer; padding: 8px 14px; font-family: var(--mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); }
+.rules summary .sum-note { margin-left: 8px; font-family: var(--body); font-size: 12px; letter-spacing: 0; text-transform: none; color: var(--ink-3); }
+.rules-body { padding: 0 14px 10px; }
+.rules ul { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
 .rules b { color: var(--ink); font-weight: 600; }
 
 .readout {
   background: var(--surface); border: 1px solid var(--rule); border-radius: 14px;
-  padding: 20px; display: flex; flex-direction: column; gap: 18px; min-width: 0;
+  padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; box-sizing: border-box;
 }
-.dyn { display: grid; grid-template-columns: auto 1fr; column-gap: 16px; align-items: end; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.dyn { display: grid; grid-template-columns: auto 1fr; column-gap: 16px; align-items: end; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
 .dyn .label { grid-column: 1 / -1; }
 .dyn-mark {
-  font-family: var(--display); font-style: italic; font-size: 96px; line-height: .85;
+  font-family: var(--display); font-style: italic; font-size: 76px; line-height: .85; transform-origin: 20% 80%;
   color: var(--tension); min-width: 1.3em; transition: color .3s;
 }
 .dyn-word { font-family: var(--display); font-style: italic; font-size: 22px; color: var(--ink-2); padding-bottom: 8px; }
-.meters { margin: 0; display: flex; flex-direction: column; gap: 14px; }
-.meter { display: grid; grid-template-columns: 1fr auto; row-gap: 5px; column-gap: 10px; }
+.meters { margin: 0; display: flex; flex-direction: column; gap: 11px; }
+.meter { display: grid; grid-template-columns: 1fr auto; row-gap: 4px; column-gap: 10px; }
 .meter dt { align-self: baseline; }
 .meter dd { margin: 0; font-family: var(--mono); font-size: 15px; font-variant-numeric: tabular-nums; }
 .meter .bar { grid-column: 1 / -1; height: 6px; border-radius: 3px; background: var(--rule); overflow: hidden; }
 .meter .bar i { display: block; height: 100%; width: 0; border-radius: 3px; transition: width .12s linear; }
-.meter .def { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
+.meter .def { grid-column: 1 / -1; margin: 0; font-size: 12px; color: var(--ink-2); line-height: 1.4; }
 .meter.big dd { font-size: 20px; }
 /* Event log: what just happened, kept on screen so it can be read at the viewer's pace. */
-.log { display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
-.log-list { list-style: none; margin: 0; padding: 0; height: 132px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; font: 12px/1.4 var(--mono); color: var(--ink-3); overscroll-behavior: contain; }
+.log { display: flex; flex-direction: column; gap: 6px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+.log-list { list-style: none; margin: 0; padding: 0; height: 118px; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; font: 12px/1.4 var(--mono); color: var(--ink-3); overscroll-behavior: contain; }
 .log-list li { display: grid; grid-template-columns: 4.2ch minmax(0, 1fr); gap: 8px; padding-left: 8px; border-left: 2px solid var(--rule); }
 .log-list li:first-child { margin-top: auto; }
 .log-list li .t { color: var(--ink-3); font-variant-numeric: tabular-nums; }
@@ -139,11 +146,11 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 .log-list li.danger { border-left-color: var(--danger); }
 .log-list li.rule { border-left-color: var(--unc); }
 .log-list li.rule b { font-weight: 600; color: var(--unc); }
-.log-list li.new { animation: log-in .6s ease-out; }
-@keyframes log-in { from { background: color-mix(in srgb, var(--ink) 12%, transparent); } to { background: transparent; } }
 .arena-col .log { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; }
 .arena-col .log-list { height: 96px; }
-.status { font-size: 13px; line-height: 1.5; color: var(--ink-2); padding-top: 12px; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; min-height: calc(1.5em * 3 + 12px); box-sizing: border-box; }
+.readout-foot { margin: 0; padding-top: 10px; border-top: 1px solid var(--rule); display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; justify-content: space-between; font-size: 12.5px; line-height: 1.5; }
+.readout-foot a { color: var(--ink-2); font-size: 12px; }
+.status { color: var(--ink-2); font-variant-numeric: tabular-nums; min-height: calc(1.5em * 2); }
 /* Text that changes while the game runs gets reserved space, so the panel never changes height. */
 .meter .def.live { min-height: calc(1.4em * 2); }
 .num-slot { display: inline-block; min-width: 2.2ch; text-align: right; font-variant-numeric: tabular-nums; }
@@ -158,9 +165,47 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 .legend i.area { height: 9px; opacity: .45; }
 .legend i.bar { width: 2px; height: 12px; }
 .chart-box { background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 6px 4px; }
-#score { display: block; width: 100%; height: 390px; }
+.score-box { position: relative; height: 390px; }
+#score { display: block; position: absolute; inset: 10px 6px 4px; width: calc(100% - 12px); height: calc(100% - 14px); }
 #overview { display: block; width: 100%; height: 130px; }
-@media (max-width: 560px) { #score { height: 330px; } }
+@media (max-width: 560px) { .score-box { height: 330px; } }
+/* On a desktop-sized window, the first screen is exactly one window tall: the game shrinks to the space left,
+   the side panel fits beside it, and the event log takes whatever height the panel has spare. */
+@media (min-width: 881px) and (min-height: 600px) {
+  .page { max-width: clamp(1180px, calc((100svh - 400px) * 2.1667 + 24px), 2200px); } /* wide enough that the game, not the page width, uses up the height */
+  .screen-play { height: 100svh; min-height: 0; }
+  .stage { flex: 1 1 auto; min-height: 0; grid-template-rows: auto minmax(0, 1fr); align-items: stretch; }
+  .arena-col { min-height: 0; }
+  .arena-wrap { flex: 1 1 0; min-height: 150px; container-type: size; display: grid; justify-items: center; align-items: start; }
+  #game { width: min(100cqw, 100cqh * 4 / 3); height: auto; }
+  .rules-body { max-height: 24svh; overflow-y: auto; }
+  .rules ul { display: block; columns: 2; column-gap: 28px; }
+  .rules li { break-inside: avoid; margin-bottom: 6px; }
+  .readout { min-height: 0; overflow-y: auto; }
+  .readout .log { flex: 1 1 auto; min-height: 70px; }
+  .readout .log-list { flex: 1 1 0; height: auto; min-height: 0; }
+  .screen-score .score-sec { flex: 1 1 auto; display: flex; flex-direction: column; min-height: 0; }
+  .screen-score .score-box { flex: 1 1 auto; height: auto; min-height: 300px; }
+}
+/* Shorter windows: tighten the panel so the game keeps as much height as possible. */
+@media (min-width: 881px) and (min-height: 600px) and (max-height: 900px) {
+  .screen-play { gap: 14px; padding-block: 16px; }
+  .game-tab small { display: none; }
+  .readout { padding: 12px 16px; gap: 10px; }
+  .dyn { padding-bottom: 8px; }
+  .dyn-mark { font-size: 56px; }
+  .dyn-word { font-size: 18px; padding-bottom: 4px; }
+  .meters { gap: 8px; }
+  .readout .log { min-height: 62px; padding-bottom: 8px; }
+  .readout-foot { padding-top: 8px; justify-content: flex-end; }
+  .readout-foot .status { display: none; } /* the game's own corner display already shows zone, hearts and safe point */
+}
+@media (min-width: 881px) and (min-height: 600px) and (max-height: 760px) {
+  .meters { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 18px; }
+  .meter.big, #m-X, #m-you { grid-column: 1 / -1; }
+  .readout-foot { display: none; }
+  .lede { font-size: 13px; }
+}
 
 .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; margin: 0 0 12px; }
 .stat { background: var(--surface); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
@@ -192,17 +237,20 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 .you-table .rbar { display: block; height: 6px; border-radius: 3px; background: var(--ink-2); }
 button:disabled { opacity: .45; cursor: default; }
 #copy-fallback { width: 100%; min-height: 140px; font-family: var(--mono); font-size: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 8px; box-sizing: border-box; }
-@media (prefers-reduced-motion: reduce) { .meter .bar i, .dyn-mark { transition: none; } .log-list li.new { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .meter .bar i, .dyn-mark { transition: none; } }
 </style>
 
 <div class="page">
+<section class="screen screen-play" aria-label="Game and live readout">
   <header class="masthead">
-    <p class="eyebrow">A graphical notation for tension in games</p>
-    <h1>Tension <em>Score</em></h1>
+    <div class="mast-title">
+      <p class="eyebrow">A graphical notation for tension in games</p>
+      <h1>Tension <em>Score</em></h1>
+    </div>
     <p class="lede">Two small games that write their own score as they are played. Progress is the melody, tension is the dynamics, and recurring patterns are the voices. Tension combines what you stand to lose, how close danger is, and how uncertain the outcome is, which the game estimates by playing out 24 possible futures. Watch the bot, or play yourself and rate your own tension to compare it with the machine&rsquo;s.</p>
   </header>
 
-  <section class="stage" aria-label="Game and live readout">
+  <div class="stage">
     <div class="game-tabs" role="group" aria-label="Which game">
       <button class="game-tab" id="btn-g-arena" aria-pressed="true">Arena<small>Dodge enemies that arrive in motifs</small></button>
       <button class="game-tab" id="btn-g-zedrix" aria-pressed="false">Zedrix<small>Stack falling pieces; the pieces are the motifs</small></button>
@@ -243,8 +291,9 @@ button:disabled { opacity: .45; cursor: default; }
         <button id="btn-sound" class="solo" aria-pressed="false">Sound off</button>
         <button id="btn-restart" class="solo">Restart</button>
       </div>
-      <details class="rules" id="rules" open>
-        <summary>Rules</summary>
+      <details class="rules" id="rules">
+        <summary>Rules <span class="sum-note">every rule of the game, in full</span></summary>
+        <div class="rules-body" id="rules-body">
         <ul data-game="zedrix" hidden>
           <li><b>Goal.</b> Pieces fall into a well 9 cells wide and 18 tall. Fill a row completely to clear it. Every 8 cleared rows is a new level, and pieces fall faster each level.</li>
           <li><b>Pieces.</b> Five shapes: D Duo (2 cells), B Bar (3 in a line), H Hook (3, bent), Z Zed (4, zigzag) and C Cross (5, a plus). The next two pieces are shown on the right.</li>
@@ -263,6 +312,7 @@ button:disabled { opacity: .45; cursor: default; }
           <li><b>Motifs.</b> Enemies arrive in four patterns: A Pincer from two opposite edges, B Crossfire sweeping across in parallel lanes, C Stream in single file from one edge, and D Ring closing in around you. A new one appears every two zones. With Structured order they repeat in a phrase you can learn, which now and then breaks.</li>
           <li><b>Controls.</b> Press <b>Play yourself</b>, then use <kbd>WASD</kbd> or the arrow keys to move and <kbd>Space</kbd> to dash, or hold a finger where you want to go. The bot plays by exactly these rules.</li>
         </ul>
+        </div>
       </details>
       <div class="rate" id="rate-box" hidden>
         <label for="rate-range" class="label">Your tension</label>
@@ -283,48 +333,46 @@ button:disabled { opacity: .45; cursor: default; }
         <ol class="log-list" id="log" role="log" aria-labelledby="log-h"></ol>
       </div>
       <dl class="meters">
-        <div class="meter big">
+        <div class="meter big" title="Combines stakes, threat and uncertainty. If any of them is zero, so is tension.">
           <dt>Tension</dt><dd id="v-T">0.00</dd>
           <span class="bar"><i id="b-T" style="background: var(--tension)"></i></span>
-          <p class="def">Combines the three below. If any of them is zero, so is tension.</p>
         </div>
-        <div class="meter">
+        <div class="meter" title="Progress you would lose by dying now, plus a small fixed cost.">
           <dt>Stakes</dt><dd id="v-S">0.00</dd>
           <span class="bar"><i id="b-S" style="background: var(--stakes)"></i></span>
-          <p class="def" id="d-S">Progress you would lose by dying now: <span id="lose" class="num-slot">0.0</span> <span id="lose-unit">zones</span>.</p>
+          <p class="def">Lose <span id="lose" class="num-slot">0.0</span> <span id="lose-unit">zones</span> if you die now</p>
         </div>
-        <div class="meter">
+        <div class="meter" id="m-Th">
           <dt>Threat</dt><dd id="v-Th">0.00</dd>
           <span class="bar"><i id="b-Th" style="background: var(--threat)"></i></span>
-          <p class="def" id="def-Th">Missing hearts, plus how close the enemies are.</p>
         </div>
-        <div class="meter">
+        <div class="meter" title="Most uncertain when the simulated futures split 12 and 12.">
           <dt>Uncertainty</dt><dd id="v-U">0.00</dd>
           <span class="bar"><i id="b-U" style="background: var(--unc)"></i></span>
-          <p class="def"><span id="hits" class="num-slot">0</span> of 24 simulated futures <span id="u-event">get hit in the next 3 seconds</span>. Most uncertain at 12 of 24.</p>
+          <p class="def"><span id="hits" class="num-slot">0</span> of 24 futures <span id="u-event">get hit in the next 3 seconds</span></p>
         </div>
-        <div class="meter">
+        <div class="meter" id="m-P">
           <dt>Progress</dt><dd id="v-P">0.00</dd>
           <span class="bar"><i id="b-P" style="background: var(--prog)"></i></span>
-          <p class="def" id="def-P">Zone number plus sparks collected. The bar is progress through this zone.</p>
         </div>
-        <div class="meter">
+        <div class="meter" id="m-X">
           <dt>Pattern surprise</dt><dd id="v-X">0.00</dd>
           <span class="bar"><i id="b-X" style="background: var(--ink-2)"></i></span>
-          <p class="def" id="def-X">How unexpected the latest motifs were to a model that learns their order as you play.</p>
           <p class="def live" id="voices-now">No motifs playing.</p>
         </div>
-        <div class="meter" id="m-you" hidden>
+        <div class="meter" id="m-you" title="Your own rating of how tense it feels." hidden>
           <dt>You</dt><dd id="v-R">0.00</dd>
           <span class="bar"><i id="b-R" style="background: var(--ink)"></i></span>
-          <p class="def">Your own rating of how tense it feels.</p>
         </div>
       </dl>
-      <div class="status" id="status">Zone 1</div>
+      <p class="readout-foot"><span class="status" id="status">Zone 1</span><a href="#method-h">What these measure</a></p>
     </aside>
-  </section>
+  </div>
+</section>
 
-  <section aria-labelledby="score-h">
+<section class="screen screen-score" aria-label="The score and this session">
+
+  <section class="score-sec" aria-labelledby="score-h">
     <div class="sec-head">
       <h2 id="score-h">The score</h2>
       <p id="score-note">The last 60 seconds. Staff lines are zones, bar lines are gates, and a double bar marks a safe point.</p>
@@ -340,7 +388,7 @@ button:disabled { opacity: .45; cursor: default; }
       <span id="lg-you" hidden><i style="background: var(--ink)"></i>You (your rating)</span>
       <span><i class="area" style="background: var(--ink-2)"></i><span id="lg-motifs">Motif voices A&ndash;D: tick height is surprise, &prime; marks a variation, ! a broken pattern</span></span>
     </div>
-    <div class="chart-box"><canvas id="score" aria-label="Scrolling chart of progress and tension over the last 60 seconds"></canvas></div>
+    <div class="chart-box score-box"><canvas id="score" aria-label="Scrolling chart of progress and tension over the last 60 seconds"></canvas></div>
   </section>
 
   <section aria-labelledby="session-h">
@@ -374,6 +422,9 @@ button:disabled { opacity: .45; cursor: default; }
     <textarea id="copy-fallback" aria-label="Results text" hidden readonly></textarea>
   </section>
 
+</section>
+
+<section class="screen screen-notes" aria-label="Definitions and references">
   <section class="method" aria-labelledby="method-h">
     <div class="sec-head"><h2 id="method-h">How it is measured</h2></div>
     <div class="grid">
@@ -442,8 +493,10 @@ button:disabled { opacity: .45; cursor: default; }
       <li>Hayashida, K. (2012). Interview on the level design of <i>Super Mario 3D Land</i>, <i>Gamasutra</i>.<span class="use">Introduce, develop, twist, conclude: the shape behind establishing and varying motifs.</span></li>
     </ol>
   </section>
+</section>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
 <script>
 (() => {
 "use strict";
@@ -1004,6 +1057,23 @@ const SIM_DT = 1 / 60, RO_EVERY = 0.33, SAMPLE_EVERY = 0.1;
 const $ = id => document.getElementById(id);
 const gameCanvas = $("game"), scoreCanvas = $("score"), overCanvas = $("overview");
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+// anime.js smooths panels opening and closing. Without it (offline, or reduced motion) changes are instant.
+const A = !reduceMotion && typeof window.anime === "function" ? window.anime : null;
+function reveal(el, show, done) {
+  if (!A) { el.hidden = !show; if (done) done(); return; }
+  A.remove(el);
+  const clear = () => { el.style.height = ""; el.style.opacity = ""; el.style.overflow = ""; };
+  if (show) {
+    const wasHidden = el.hidden; el.hidden = false;
+    const cap = parseFloat(getComputedStyle(el).maxHeight), h = Math.min(el.scrollHeight, isFinite(cap) ? cap : Infinity);
+    el.style.overflow = "hidden";
+    A({ targets: el, height: [wasHidden ? 0 : el.offsetHeight, h], opacity: [wasHidden ? 0 : 1, 1], duration: 340, easing: "easeOutCubic", complete: () => { clear(); if (done) done(); } });
+  } else {
+    if (el.hidden) { if (done) done(); return; }
+    el.style.overflow = "hidden";
+    A({ targets: el, height: [el.offsetHeight, 0], opacity: [1, 0], duration: 260, easing: "easeInCubic", complete: () => { el.hidden = true; clear(); if (done) done(); } });
+  }
+}
 (function placeLog() {
   const box = $("log-box"), home = box.parentNode, next = box.nextElementSibling, mq = matchMedia("(max-width: 880px)");
   const place = () => {
@@ -1181,15 +1251,15 @@ function soundEvent(ev) {
 const LOG_MAX = 40;
 function note(text, kind) {
   const ol = $("log"), li = document.createElement("li");
-  li.className = (kind || "") + (reduceMotion ? "" : " new");
+  li.className = kind || "";
   const t = document.createElement("span"); t.className = "t"; t.textContent = fmtTime(s ? s.t : 0);
   const m = document.createElement("span");
   if (kind === "rule") { const i = text.indexOf(":"); const b = document.createElement("b"); b.textContent = text.slice(0, i + 1); m.append(b, text.slice(i + 1)); }
   else m.textContent = text;
   li.append(t, m); ol.append(li);
   while (ol.children.length > LOG_MAX) ol.firstElementChild.remove();
-  setTimeout(() => li.classList.remove("new"), 700);
   ol.scrollTop = ol.scrollHeight;
+  if (A) A({ targets: li, translateX: [-8, 0], opacity: [0, 1], duration: 380, easing: "easeOutQuad" });
 }
 function clearLog() { $("log").replaceChildren(); }
 // Teaching through play: the first time a mechanic happens in a session, the log explains it.
@@ -1648,7 +1718,11 @@ function updateUi(now) {
     $("lose").textContent = Math.max(0, cur.P - G.bankP(s)).toFixed(1);
     $("hits").textContent = hitsLast;
     const d = DYN.find(x => cur.T < x[0]);
-    if ($("dyn").textContent !== d[1]) { $("dyn").textContent = d[1]; $("dyn-word").textContent = d[2]; }
+    if ($("dyn").textContent !== d[1]) {
+      const louder = DYN.findIndex(x => x[1] === d[1]) > DYN.findIndex(x => x[1] === $("dyn").textContent);
+      $("dyn").textContent = d[1]; $("dyn-word").textContent = d[2];
+      if (A) { A.remove(["#dyn", "#dyn-word"]); A({ targets: "#dyn", scale: [louder ? 1.12 : 0.92, 1], opacity: [0.35, 1], duration: 520, easing: "easeOutCubic" }); A({ targets: "#dyn-word", translateX: [louder ? -6 : 6, 0], opacity: [0, 1], duration: 420, easing: "easeOutQuad" }); }
+    }
     $("status").innerHTML = G.status(s);
   }
   if (now - lastSlow > 500) {
@@ -1700,7 +1774,7 @@ function setRatingOn(on) {
   if (on) { rating.used = true; youAt = 0; }
   $("btn-rate").setAttribute("aria-pressed", String(on));
   $("btn-rate").textContent = on ? "Stop rating" : "Rate my tension";
-  $("rate-box").hidden = !on; $("m-you").hidden = !on;
+  reveal($("rate-box"), on); reveal($("m-you"), on);
   $("lg-you").hidden = !rating.used; $("you-sec").hidden = !rating.used;
 }
 $("btn-rate").onclick = () => { setRatingOn(!rating.on); refocus(); };
@@ -1885,8 +1959,8 @@ const GAMES = { arena: ArenaGame, zedrix: ZedrixGame };
 function applyGameUi() {
   document.querySelectorAll("[data-game]").forEach(el => { el.hidden = el.dataset.game !== game; });
   const d = G.defs;
-  $("def-Th").textContent = d.threat; $("u-event").textContent = d.uEvent; $("def-P").textContent = d.progress;
-  $("lose-unit").textContent = d.loseUnit; $("def-X").textContent = d.surprise; $("score-note").textContent = d.scoreNote;
+  $("m-Th").title = d.threat; $("u-event").textContent = d.uEvent; $("m-P").title = d.progress;
+  $("lose-unit").textContent = d.loseUnit; $("m-X").title = d.surprise; $("score-note").textContent = d.scoreNote;
   $("s-zone-label").textContent = d.furthest; $("lg-motifs").textContent = d.legendMotifs;
   $("futures-wrap").hidden = !G.trails;
   gameCanvas.setAttribute("aria-label", d.canvasLabel);
@@ -1897,6 +1971,13 @@ function setGame(g) {
   game = g; G = GAMES[g];
   applyGameUi(); setModeUi(); resetSession(); refocus();
 }
+$("rules").querySelector("summary").addEventListener("click", e => {
+  if (!A) return; // plain <details> behaviour
+  e.preventDefault();
+  const det = $("rules"), body = $("rules-body");
+  if (det.open && det.dataset.closing !== "1") { det.dataset.closing = "1"; reveal(body, false, () => { det.open = false; body.hidden = false; det.dataset.closing = ""; }); }
+  else { det.dataset.closing = ""; body.hidden = true; det.open = true; reveal(body, true); }
+});
 $("btn-g-arena").onclick = () => setGame("arena");
 $("btn-g-zedrix").onclick = () => setGame("zedrix");
 

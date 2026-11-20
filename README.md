@@ -9,7 +9,9 @@ It has two parts:
   - **Zedrix**: an original falling-block game with its own five pieces (Duo, Bar, Hook, Zed, Cross), a 9 x 18 well, and a row with one gap that rises from the bottom every 10 pieces. The pieces are the motifs, and the rising rows give the game a regular meter.
 - **Tension Score Analysis** (`tension-score-analysis.html`): what seeded bot sessions of the arena game show when you look at them all at once. Zedrix is not in the analysis yet.
 
-Both are single HTML files with no dependencies beyond Google Fonts.
+Both are single HTML files. The only outside files are Google Fonts and, on the game page, [anime.js](https://animejs.com/) 3.2.2 from cdnjs for panel motion; without it (offline, or with reduced motion turned on) panels simply open and close instantly.
+
+The game page is laid out as three screens, each one window tall: the game with its live readout, then the score and session, then the definitions and references. On a desktop-sized window the game shrinks or grows to fill the first screen exactly.
 
 ## Open it
 
