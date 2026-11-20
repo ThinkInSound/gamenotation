@@ -127,6 +127,22 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 .meter .bar i { display: block; height: 100%; width: 0; border-radius: 3px; transition: width .12s linear; }
 .meter .def { grid-column: 1 / -1; margin: 0; font-size: 12.5px; color: var(--ink-2); line-height: 1.4; }
 .meter.big dd { font-size: 20px; }
+/* Event log: what just happened, kept on screen so it can be read at the viewer's pace. */
+.log { display: flex; flex-direction: column; gap: 6px; padding-bottom: 14px; border-bottom: 1px solid var(--rule); }
+.log-list { list-style: none; margin: 0; padding: 0; height: 132px; overflow-y: auto; display: flex; flex-direction: column; gap: 3px; font: 12px/1.4 var(--mono); color: var(--ink-3); overscroll-behavior: contain; }
+.log-list li { display: grid; grid-template-columns: 4.2ch minmax(0, 1fr); gap: 8px; padding-left: 8px; border-left: 2px solid var(--rule); }
+.log-list li:first-child { margin-top: auto; }
+.log-list li .t { color: var(--ink-3); font-variant-numeric: tabular-nums; }
+.log-list li:nth-last-child(-n+3) { color: var(--ink-2); }
+.log-list li:last-child { color: var(--ink); }
+.log-list li.prog { border-left-color: var(--prog); }
+.log-list li.danger { border-left-color: var(--danger); }
+.log-list li.rule { border-left-color: var(--unc); }
+.log-list li.rule b { font-weight: 600; color: var(--unc); }
+.log-list li.new { animation: log-in .6s ease-out; }
+@keyframes log-in { from { background: color-mix(in srgb, var(--ink) 12%, transparent); } to { background: transparent; } }
+.arena-col .log { background: var(--surface); border: 1px solid var(--rule); border-radius: 10px; padding: 10px 12px; }
+.arena-col .log-list { height: 96px; }
 .status { font-size: 13px; line-height: 1.5; color: var(--ink-2); padding-top: 12px; border-top: 1px solid var(--rule); font-variant-numeric: tabular-nums; min-height: calc(1.5em * 3 + 12px); box-sizing: border-box; }
 /* Text that changes while the game runs gets reserved space, so the panel never changes height. */
 .meter .def.live { min-height: calc(1.4em * 2); }
@@ -176,7 +192,7 @@ button:focus-visible, input:focus-visible, canvas:focus-visible { outline: 2px s
 .you-table .rbar { display: block; height: 6px; border-radius: 3px; background: var(--ink-2); }
 button:disabled { opacity: .45; cursor: default; }
 #copy-fallback { width: 100%; min-height: 140px; font-family: var(--mono); font-size: 12px; background: var(--surface); color: var(--ink); border: 1px solid var(--rule); border-radius: 8px; padding: 8px; box-sizing: border-box; }
-@media (prefers-reduced-motion: reduce) { .meter .bar i, .dyn-mark { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .meter .bar i, .dyn-mark { transition: none; } .log-list li.new { animation: none; } }
 </style>
 
 <div class="page">
@@ -261,6 +277,10 @@ button:disabled { opacity: .45; cursor: default; }
         <span class="label">Dynamic marking</span>
         <span class="dyn-mark" id="dyn">pp</span>
         <span class="dyn-word" id="dyn-word">pianissimo</span>
+      </div>
+      <div class="log" id="log-box">
+        <span class="label" id="log-h">What just happened</span>
+        <ol class="log-list" id="log" role="log" aria-labelledby="log-h"></ol>
       </div>
       <dl class="meters">
         <div class="meter big">
@@ -984,10 +1004,20 @@ const SIM_DT = 1 / 60, RO_EVERY = 0.33, SAMPLE_EVERY = 0.1;
 const $ = id => document.getElementById(id);
 const gameCanvas = $("game"), scoreCanvas = $("score"), overCanvas = $("overview");
 const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+(function placeLog() {
+  const box = $("log-box"), home = box.parentNode, next = box.nextElementSibling, mq = matchMedia("(max-width: 880px)");
+  const place = () => {
+    const under = $("game").parentNode;
+    if (mq.matches ? box.previousElementSibling === under : box.parentNode === home) return;
+    if (mq.matches) under.after(box); else home.insertBefore(box, next);
+    const ol = $("log"); ol.scrollTop = ol.scrollHeight; // moving a node resets its scroll
+  };
+  mq.addEventListener("change", place); new ResizeObserver(place).observe(document.documentElement); place();
+})();
 
 let mode = "bot", speed = 1, rule = "checkpoint", showFutures = true, compose = "structured";
 let game = "arena", G = null; // G is the adapter for the game being played (ArenaGame or ZedrixGame, defined below)
-let s, hist, markers, susp, suspList, U_est, U_disp, hitsLast, paths, lastRoll, lastSample, wander, flashes, particles, rings, started, peakT, sumT, pRaw, pS, I4, youCache, xTrace, expectM, motifLog;
+let s, hist, markers, susp, suspList, U_est, U_disp, hitsLast, paths, lastRoll, lastSample, wander, particles, rings, started, peakT, sumT, pRaw, pS, I4, youCache, xTrace, expectM, motifLog;
 
 function resetSession() {
   s = G.newState(rule, compose);
@@ -995,9 +1025,10 @@ function resetSession() {
   pRaw = 1; pS = 1; I4 = 0; youCache = null; xTrace = 0; expectM = newExpect(); motifLog = [];
   markers = []; suspList = []; susp = null;
   U_est = 0; U_disp = 0; hitsLast = 0; paths = []; lastRoll = -1; lastSample = -1;
-  wander = 0; flashes = []; particles = []; rings = []; started = mode === "bot"; peakT = 0; sumT = 0;
+  wander = 0; particles = []; rings = []; started = mode === "bot"; peakT = 0; sumT = 0;
   taught = new Set();
-  flash(G.startText(mode), 2.2);
+  clearLog();
+  note(G.startText(mode), "prog");
   cycleCache = null;
 }
 
@@ -1146,10 +1177,24 @@ function soundEvent(ev) {
 }
 
 /* Session bookkeeping */
-function flash(text, dur, color, small) { flashes.push({ text, until: (s ? s.t : 0) + dur, color, small }); if (flashes.length > 3) flashes.shift(); }
-// Teaching through play: the first time a mechanic happens in a session, a caption explains it.
+// Event log beside the game: messages stay on screen instead of flashing over the action.
+const LOG_MAX = 40;
+function note(text, kind) {
+  const ol = $("log"), li = document.createElement("li");
+  li.className = (kind || "") + (reduceMotion ? "" : " new");
+  const t = document.createElement("span"); t.className = "t"; t.textContent = fmtTime(s ? s.t : 0);
+  const m = document.createElement("span");
+  if (kind === "rule") { const i = text.indexOf(":"); const b = document.createElement("b"); b.textContent = text.slice(0, i + 1); m.append(b, text.slice(i + 1)); }
+  else m.textContent = text;
+  li.append(t, m); ol.append(li);
+  while (ol.children.length > LOG_MAX) ol.firstElementChild.remove();
+  setTimeout(() => li.classList.remove("new"), 700);
+  ol.scrollTop = ol.scrollHeight;
+}
+function clearLog() { $("log").replaceChildren(); }
+// Teaching through play: the first time a mechanic happens in a session, the log explains it.
 let taught = new Set();
-function teach(key, text) { if (taught.has(key)) return; taught.add(key); flash(text, 3.4, "ink", true); }
+function teach(key, text) { if (!text || taught.has(key)) return; taught.add(key); note(text, "rule"); }
 function burst(x, y, color, n, spd) {
   if (reduceMotion) n = Math.ceil(n / 3);
   for (let i = 0; i < n; i++) { const a = rand() * 6.283, v = spd * (0.4 + rand() * 0.8); particles.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, life: 0.5 + rand() * 0.4, max: 0.9, color }); }
@@ -1163,11 +1208,11 @@ function handleEvent(ev) {
   else if (ev.type === "dash") teach("dash", G.teach.dash);
   else if (ev.type === "drop") teach("drop", G.teach.drop);
   else if (ev.type === "rise") { markers.push({ t, type: "rise" }); rings.push({ x: ev.x, y: ev.y, r: 6, grow: 260, life: 0.4, max: 0.4, color: "ink-2" }); teach("rise", G.teach.rise); }
-  else if (ev.type === "gateOpen") flash("Gate open", 1.4, "prog");
+  else if (ev.type === "gateOpen") note("Gate open", "prog");
   else if (ev.type === "gate") {
     markers.push({ t, type: ev.banked ? "bank" : "bar", zone: ev.zone });
     rings.push({ x: ev.x != null ? ev.x : fc.x, y: ev.y != null ? ev.y : fc.y, r: 10, grow: 900, life: 0.6, max: 0.6, color: "prog" });
-    flash(ev.banked ? `${G.Unit} ${ev.zone + 1}: safe point, progress banked` : `${G.Unit} ${ev.zone + 1}`, 2, "prog");
+    note(ev.banked ? `${G.Unit} ${ev.zone + 1}: safe point, progress banked` : `${G.Unit} ${ev.zone + 1}`, "prog");
   } else if (ev.type === "hit") {
     markers.push({ t, type: "hit" });
     burst(ev.x, ev.y, "danger", 10, 160);
@@ -1176,13 +1221,13 @@ function handleEvent(ev) {
     if (susp) endSusp("broken");
   } else if (ev.type === "death") {
     markers.push({ t, type: "death", lost: ev.lost });
-    flash(rule === "checkpoint" ? `Fell back to ${G.unit} ${G.unitNow(s) + 1}, lost ${ev.lost.toFixed(1)}` : `Run over, lost ${ev.lost.toFixed(1)}. Back to ${G.unit} 1`, 2.6, "danger");
+    note(rule === "checkpoint" ? `Fell back to ${G.unit} ${G.unitNow(s) + 1}, lost ${ev.lost.toFixed(1)}` : `Run over, lost ${ev.lost.toFixed(1)}. Back to ${G.unit} 1`, "danger");
   } else if (ev.type === "heal") { burst(ev.x, ev.y, "stakes", 8, 90); teach("heal", G.teach.heal); }
   else if (ev.type === "motif") {
     const bits = expectSurprisal(expectM, ev.ti);
     xTrace = Math.min(1, xTrace + bits / SURPRISE_BITS);
     motifLog.push({ t, t1: null, ti: ev.ti, id: ev.id, n: ev.n, varied: ev.varied, together: ev.together, bits, violation: ev.violation, slot: ev.slot });
-    if (ev.n === 1) flash(`${G.newMotifWord}: ${G.MOTIFS[ev.ti]} ${G.MOTIF_NAMES[ev.ti]}`, 2.4, "ink");
+    if (ev.n === 1) note(`${G.newMotifWord}: ${G.MOTIFS[ev.ti]} ${G.MOTIF_NAMES[ev.ti]}`);
     // each motif sounds its own note; louder when it is more surprising
     if (audio.on) blip(degFreq(G.progress(s)) * [2, 2.25, 2.5, 3, 3.75][ev.ti], 0, 0.2, "sine", 0.03 + 0.07 * Math.min(1, bits / SURPRISE_BITS));
   } else if (ev.type === "motifEnd") {
@@ -1357,20 +1402,7 @@ function drawArena(ctx, t) {
   ctx.fillText(rule === "checkpoint" ? `SAFE POINT: ZONE ${bankP(s) + 1}` : "PERMADEATH", W - 14, 30);
 }
 function drawOverlay(ctx, t) {
-  const live = flashes.filter(fl => fl.until > t);
   ctx.textAlign = "center"; ctx.textBaseline = "top";
-  let fy = G.flashY;
-  live.forEach(fl => {
-    const a = Math.min(1, (fl.until - t) / 0.4);
-    ctx.font = fl.small ? `500 15px ${FONT_BODY}` : `italic 26px ${FONT_DISPLAY}`;
-    if (fl.small) { // captions get a backing so they read over the action
-      const tw = ctx.measureText(fl.text).width;
-      ctx.fillStyle = alpha(C.surface, 0.85 * a); roundRect(ctx, W / 2 - tw / 2 - 10, fy - 4, tw + 20, 24, 6); ctx.fill();
-    }
-    ctx.fillStyle = alpha(C[fl.color || "ink"] || C.ink, a);
-    ctx.fillText(fl.text, W / 2, fy);
-    fy += fl.small ? 28 : 30;
-  });
   if (mode === "play" && !started) {
     ctx.fillStyle = alpha(C.surface, 0.92); roundRect(ctx, W / 2 - 190, H / 2 - 62, 380, 124, 12); ctx.fill();
     ctx.strokeStyle = C.rule; ctx.lineWidth = 1; ctx.stroke();
@@ -1797,7 +1829,7 @@ function setModeUi() {
 /* ---------- Game adapters: everything the app needs that differs between the two games ---------- */
 const ArenaGame = {
   key: "arena", name: "Arena", unit: "zone", Unit: "Zone", zoneLetter: "Z", newMotifWord: "New motif",
-  MOTIFS, MOTIF_NAMES, RO_EVERY: 0.33, trails: true, dashLabel: "Dash", flashY: 16,
+  MOTIFS, MOTIF_NAMES, RO_EVERY: 0.33, trails: true, dashLabel: "Dash",
   newState, step, rollouts: (st, want) => rollouts(st, want), botInput: (st, w) => botInput(st, w),
   progress, bankP, stakesN, threatOf, voicesOf,
   pressure: st => { let raw = 0; for (const en of st.en) raw += Math.exp(-Math.max(0, Math.hypot(st.pl.x - en.x, st.pl.y - en.y) - 17) / 55); return 1 - Math.exp(-raw / 1.2); },
@@ -1826,7 +1858,7 @@ const ArenaGame = {
 };
 const ZedrixGame = {
   key: "zedrix", name: "Zedrix", unit: "level", Unit: "Level", zoneLetter: "L", newMotifWord: "New piece",
-  MOTIFS: Zedrix.LETTERS, MOTIF_NAMES: Zedrix.NAMES, RO_EVERY: 0.5, trails: false, dashLabel: "Drop", flashY: 150,
+  MOTIFS: Zedrix.LETTERS, MOTIF_NAMES: Zedrix.NAMES, RO_EVERY: 0.5, trails: false, dashLabel: "Drop",
   newState: Zedrix.newState, step: Zedrix.step, rollouts: st => Zedrix.rollouts(st), botInput: Zedrix.botInput,
   progress: Zedrix.progress, bankP: Zedrix.bankP, stakesN: Zedrix.stakesN, threatOf: Zedrix.threatOf, voicesOf: Zedrix.voicesOf, pressure: Zedrix.pressure,
   playerInput: dt => zedrixInput(dt), idle: { move: 0, rot: false, soft: false, drop: false }, draw: drawZedrix,

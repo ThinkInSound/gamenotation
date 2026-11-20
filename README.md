@@ -94,7 +94,7 @@ docs/                         the GitHub Pages site (generated)
 
 ## Design rule
 
-Every game rule is stated on screen (the Rules panel) or taught through play (first-time captions, visual and audio feedback). There are no hidden mechanics.
+Every game rule is stated on screen (the Rules panel) or taught through play (a first-time explanation in the event log beside the game, plus visual and audio feedback). There are no hidden mechanics.
 
 ## References
 
