@@ -410,6 +410,7 @@ function mount(host, render) {
   charts.push(c);
   render();
   c.w = host.clientWidth;
+  ro.observe(host);
   return c;
 }
 const ro = new ResizeObserver(() => { for (const c of charts) if (c.host.clientWidth && Math.abs(c.host.clientWidth - c.w) > 2) { c.w = c.host.clientWidth; c.render(); } });
@@ -727,22 +728,22 @@ function mirrorHist(host, key) {
 /* ---------- Autocorrelation ---------- */
 (function acfs() {
   const lags = D.modes.checkpoint.acf.map((_, i) => i / D.hz);
-  const zeroAt = mode => { const a = D.modes[mode].acf; for (let i = 1; i < a.length; i++) if (a[i] <= 0) return i / D.hz; return null; };
+  const halfAt = mode => { const a = D.modes[mode].acf; for (let i = 1; i < a.length; i++) if (a[i] <= 0.5) return i / D.hz; return null; };
   for (const [mode, id] of [["checkpoint", "acf-cp"], ["permadeath", "acf-pd"]]) {
-    const a = D.modes[mode].acf, z = zeroAt(mode);
+    const a = D.modes[mode].acf, z = halfAt(mode);
     const ymin = Math.min(-0.2, Math.floor(Math.min(...a) * 10) / 10);
     lineChart($(id), {
       x: lags, xDomain: [0, 60], yDomain: [ymin, 1], yTicks: [ymin, 0, 0.5, 1].filter((v, i, s) => s.indexOf(v) === i), yBase: 0, yFmt: v => v.toFixed(1), height: 180, title: ML[mode],
       xTicks: [0, 10, 20, 30, 40, 50, 60], xFmt: v => `${v} s`, tipX: v => `${v.toFixed(1)} s later`,
       series: [{ label: "Autocorrelation", values: a, color: "--tension", width: 2 }],
-      markers: z ? [{ x: z, kind: "bar", label: `ZERO AT ${z.toFixed(1)} S`, labelY: 12 }] : [], aria: `Autocorrelation of tension, ${ML[mode]}`
+      markers: z ? [{ x: z, kind: "bar", label: `HALVED AT ${z.toFixed(1)} S`, labelY: 12 }] : [], aria: `Autocorrelation of tension, ${ML[mode]}`
     });
   }
-  const zc = zeroAt("checkpoint"), zp = zeroAt("permadeath");
+  const hc = halfAt("checkpoint"), hp = halfAt("permadeath");
   const cyc = S.checkpoint.cycle || S.permadeath.cycle;
   $("f-acf").innerHTML = cyc
     ? `Tension has a repeating cycle of about <b>${cyc.lag} s</b>.`
-    : `No. Tension stays similar to itself for about <b>${zc ? zc.toFixed(0) : "?"} s</b> with checkpoints and <b>${zp ? zp.toFixed(0) : "?"} s</b> with permadeath, then becomes unrelated to its past, with no second hump. Motif slots are evenly spaced within a zone, but zones take irregular amounts of time to clear and every gate or death restarts the phrase, so the pulse never settles into a meter.`;
+    : `No. Tension soon stops resembling itself: the correlation halves after <b>${hc.toFixed(1)} s</b> with checkpoints and <b>${hp.toFixed(1)} s</b> with permadeath. A weak resemblance lingers for most of a minute, from slow changes such as difficulty rising zone by zone, but there is no second hump. Motif slots are evenly spaced within a zone, but zones take irregular amounts of time to clear and every gate or death restarts the phrase, so the pulse never settles into a meter.`;
 })();
 
 /* ---------- Motifs ---------- */
