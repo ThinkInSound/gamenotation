@@ -146,7 +146,7 @@ pre { font-family: var(--mono); font-size: 12.5px; background: var(--surface); b
   <header>
     <p class="eyebrow">Game analysis theory &middot; arena game &middot; 6 bot sessions</p>
     <h1>Tension Score <em>Analysis</em></h1>
-    <p class="lede">What the arena game's measurements show when you look at them all at once. The data comes from six seeded 10-minute sessions played by the bot, three with checkpoints and three with permadeath, sampled 10 times a second. It is bot play, so it describes the game and the model, not how a person felt. The live game is <a href="https://claude.ai/artifact/2gGbnXZDqvGNfo3MqqSHhy">Tension Score</a>.</p>
+    <p class="lede">What the arena game&rsquo;s measurements look like taken all together. The data is six seeded 10-minute bot sessions, three with checkpoints and three with permadeath, sampled ten times a second. Because a bot played, this shows how the game and the model behave, not how anyone felt. The live game is <a href="https://claude.ai/artifact/2gGbnXZDqvGNfo3MqqSHhy">Tension Score</a>.</p>
   </header>
 
   <section aria-labelledby="sum-h">
@@ -157,7 +157,7 @@ pre { font-family: var(--mono); font-size: 12.5px; background: var(--surface); b
 
   <section aria-labelledby="score-h">
     <h2 id="score-h">Two scores</h2>
-    <p class="caption">Two minutes from each death rule, ending 30 seconds after a death. The top lane is progress, with zones as staff lines. The bottom lane is tension with its three parts. Shaded spans are suspensions, thin lines are gates, a double line is a safe point, and red marks a death. Hover or use the arrow keys for values.</p>
+    <p class="caption">Two minutes of each death rule, ending 30 seconds after a death. Top: progress, with zones as staff lines. Bottom: tension and its three parts. Shaded spans are suspensions, thin lines are gates, a double line is a safe point, and red is a death. Hover, or use the arrow keys, to read values.</p>
     <div class="legend">
       <span><i style="background: var(--prog)"></i>Progress</span>
       <span><i class="area" style="background: var(--tension)"></i>Tension</span>
@@ -223,7 +223,7 @@ pre { font-family: var(--mono); font-size: 12.5px; background: var(--surface); b
   <section aria-labelledby="mot-h">
     <h2 id="mot-h">Motifs: establishment, frequency and concurrency</h2>
     <p class="finding" id="f-mot1"></p>
-    <p class="caption">Enemies arrive as four motifs: A Pincer, B Crossfire, C Stream and D Ring. Each row below is a voice. A bar spans the time a motif is playing, the tick at its start is as tall as the surprise a learning model felt, &prime; marks a variation, and &ldquo;new&rdquo; marks a first hearing. Hover a bar for details.</p>
+    <p class="caption">Enemies arrive as four motifs: A Pincer, B Crossfire, C Stream and D Ring. Each row is a voice. A bar shows when a motif is playing, and the tick at its start is as tall as the model&rsquo;s surprise. &prime; marks a variation, &ldquo;new&rdquo; a first hearing and ! a broken pattern. Hover a bar for details.</p>
     <div class="grid2">
       <div class="card"><div class="panel-head"><h3>Checkpoints</h3><span class="label">same 2 minutes as above</span></div><div id="roll-cp"></div></div>
       <div class="card"><div class="panel-head"><h3>Permadeath</h3><span class="label">same 2 minutes as above</span></div><div id="roll-pd"></div></div>
@@ -295,8 +295,8 @@ pre { font-family: var(--mono); font-size: 12.5px; background: var(--surface); b
   <section aria-labelledby="meth-h">
     <h2 id="meth-h">What this does and does not show</h2>
     <div class="method">
-      <div><h3>It shows the model working as designed</h3><p>Stakes, threat and uncertainty behave the way the theory predicts: the death rule reshapes stakes, gates resolve tension, and the futures-based uncertainty sees danger before damage lands.</p></div>
-      <div><h3>It does not show what anyone felt</h3><p>The player is a bot. Whether any of these curves matches felt tension is the open question. The next step is to play Tension Score while rating your own tension, then see which curve tracks you best.</p></div>
+      <div><h3>It shows the model working as designed</h3><p>Stakes, threat and uncertainty behave as the theory predicts. The death rule reshapes stakes, gates resolve tension, and uncertainty sees danger before damage lands.</p></div>
+      <div><h3>It does not show what anyone felt</h3><p>The player is a bot, so whether any of these curves matches felt tension is still open. To test it, play Tension Score while rating your own tension and see which curve tracks you best.</p></div>
       <div><h3>Motif effects are confounded in bot play</h3><p>Later motif appearances come in harder zones with more layering, and the bot never learns. So the bot data can show how motifs are scheduled and how layering raises tension, but not whether familiarity lowers it. That needs a person's ratings, compared within the same zone.</p></div>
       <div><h3>The weights are first guesses</h3><p>Threat's 0.4/0.6 split, the stakes scale, the 3-second futures and the intensity rates were chosen once and never tuned. Uncertainty from 24 futures also carries sampling noise of about &plusmn;0.1 in the odds, which inflates surprise.</p></div>
       <div><h3>Reproduce it</h3><p>From the GameNotation folder, run the sessions and rebuild this page:</p><pre>node tools/arena-analysis.js 600
@@ -850,7 +850,7 @@ function voicesBars(host, mode) {
   const vc = Mc.voices.meanT, vp = Mp.voices.meanT;
   $("f-mot1").innerHTML = `The scheduler introduces a new motif every two zones (first heard at ${mmss(Mc.stats[0].firstHeard)}, ${mmss(Mc.stats[1].firstHeard)}, ${mmss(Mc.stats[2].firstHeard)} and ${mmss(Mc.stats[3].firstHeard)} in the first checkpoint session), varies familiar ones about half the time, and layers them more as zones get harder. The motifs differ in danger: <b>Ring and Crossfire</b> land about ${f2(Mc.stats[3].hitsPerAppearance)} and ${f2(Mc.stats[1].hitsPerAppearance)} hits per appearance with checkpoints, while Pincer and Stream land ${f2(Mc.stats[0].hitsPerAppearance)} and ${f2(Mc.stats[2].hitsPerAppearance)}.`;
   $("f-mot2").innerHTML = `<b>Concurrency drives tension.</b> Mean tension climbs from ${f2(vc[0])} with no motif playing to ${f2(vc[3])} with three and ${f2(vc[4])} with four (checkpoints). With checkpoints it levels off at three to four voices, as if the player is already saturated. With permadeath it keeps climbing, to ${f2(vp[4])}, because the stakes are higher.`;
-  $("f-mot3").innerHTML = `In bot play tension <b>rises</b> with a motif's appearance number, the opposite of habituation. That is a confound, not a finding: later appearances come in harder zones with more layering, and the bot never learns, so nothing can habituate. Testing habituation needs a human, with appearances compared within the same zone. Rate your tension in Tension Score and its results table shows your own habituation.`;
+  $("f-mot3").innerHTML = `In bot play tension <b>rises</b> with a motif's appearance number, the opposite of habituation. That comes from how the game is built: later appearances happen in harder zones with more layering, and the bot never learns, so nothing can habituate. Testing habituation needs a person, with appearances compared within the same zone. Rate your tension in Tension Score and its results table shows your own.`;
   $("f-mot4").innerHTML = `The few first and second hearings (${Mc.novelty.fresh.n} with checkpoints, ${Mp.novelty.fresh.n} with permadeath) mostly happen in easy early zones, so in bot play tension around them is not higher than around familiar ones. Novelty is something a person feels and the bot does not, so this is another comparison that needs your ratings.`;
 
   // structure: structured against random order, and broken against kept patterns

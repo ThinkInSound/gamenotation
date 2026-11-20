@@ -181,9 +181,9 @@ button:disabled { opacity: .45; cursor: default; }
 
 <div class="page">
   <header class="masthead">
-    <p class="eyebrow">Game analysis theory &middot; live model</p>
+    <p class="eyebrow">A graphical notation for tension in games</p>
     <h1>Tension <em>Score</em></h1>
-    <p class="lede">Two small games that measure themselves while they are played, scored with the same notation. Each moment is scored like music: progress is the melody and tension is the dynamics, with <code>tension = stakes &times; threat &times; uncertainty</code>. Uncertainty comes from simulating 24 possible futures. <b>Arena</b> is a dodging game whose enemies arrive in motifs. <b>Zedrix</b> is a falling-block game whose pieces are the motifs.</p>
+    <p class="lede">Two small games that write their own score as they are played. Progress is the melody, tension is the dynamics, and recurring patterns are the voices. Tension combines what you stand to lose, how close danger is, and how uncertain the outcome is, which the game estimates by playing out 24 possible futures. Watch the bot, or play yourself and rate your own tension to compare it with the machine&rsquo;s.</p>
   </header>
 
   <section class="stage" aria-label="Game and live readout">
@@ -234,17 +234,17 @@ button:disabled { opacity: .45; cursor: default; }
           <li><b>Pieces.</b> Five shapes: D Duo (2 cells), B Bar (3 in a line), H Hook (3, bent), Z Zed (4, zigzag) and C Cross (5, a plus). The next two pieces are shown on the right.</li>
           <li><b>Moves.</b> Move left and right, rotate (a piece steps sideways if a wall blocks the turn), drop faster, or hard drop straight to the outline below it. A piece locks shortly after it lands.</li>
           <li><b>Rising rows.</b> After every 10 pieces, a row with one gap rises from the bottom and pushes the stack up. The counter on the left shows how many pieces until the next one.</li>
-          <li><b>Danger zone.</b> The top three rows are tinted. If a new piece cannot appear, or a rising row pushes blocks off the top, you top out. With checkpoints, every third level is a safe point and topping out returns you to the last one. With permadeath, it returns you to level 1. Either way the well empties.</li>
-          <li><b>Order of pieces.</b> With Structured composition, pieces come in shuffled sets of five with each shape once, so you can learn what is coming. After two sets, a set now and then breaks: one piece is swapped for another. With Random, every piece is drawn independently, so long waits for one shape can happen.</li>
+          <li><b>Danger zone.</b> The top three rows are tinted. You top out if a new piece has no room to appear, or a rising row pushes blocks off the top. The well then empties and you go back to your last safe point (every third level, with checkpoints) or to level 1 (with permadeath).</li>
+          <li><b>Order of pieces.</b> Structured deals pieces in shuffled sets of five, one of each shape, so you can learn what is coming. After two sets, a set occasionally breaks and one piece is swapped. Random draws every piece independently, so you may wait a long time for a shape.</li>
           <li><b>Controls.</b> Press <b>Play yourself</b>, then use <kbd>&larr;</kbd> <kbd>&rarr;</kbd> or <kbd>A</kbd> <kbd>D</kbd> to move, <kbd>&uarr;</kbd> or <kbd>W</kbd> to rotate, <kbd>&darr;</kbd> or <kbd>S</kbd> to drop faster, and <kbd>Space</kbd> to hard drop. On touch, tap beside the well to move, tap its top half to rotate and its bottom half to hard drop. The bot uses exactly these moves.</li>
         </ul>
         <ul data-game="arena">
           <li><b>Goal.</b> Collect the five sparks to open the gate, then step into it. Each gate starts a new zone and clears every enemy.</li>
-          <li><b>Hearts.</b> You have five. A hit costs one, knocks you back, removes the enemy that hit you, and leaves you safe for 1 second while you blink. After a gate, a heal (+) may appear if you are hurt; it restores one heart.</li>
+          <li><b>Hearts.</b> You have five. A hit costs one and knocks you back. The enemy that hit you disappears, and you are safe for 1 second while you blink. If you are hurt, a heal (+) may appear after a gate. It restores one heart.</li>
           <li><b>Dash.</b> A burst of about three times normal speed for a fifth of a second. Nothing can hit you mid-dash. It recharges in 1.5 seconds, shown by the ring around you. The bot dashes the same way when an enemy gets close.</li>
           <li><b>Death.</b> With checkpoints, every third gate is a safe point, and a death returns you to the last one. With permadeath, a death returns you to zone 1. Either way your hearts refill, and motifs you have already heard stay familiar.</li>
           <li><b>Enemies.</b> A dashed ring shows where one is about to appear. Red triangles chase you and turn with some momentum. Amber diamonds fly straight and bounce off walls. Enemies fade, then vanish after a few seconds (motif enemies after 6). The longer you stay in a zone, the faster enemies arrive.</li>
-          <li><b>Motifs.</b> Enemies arrive in four patterns: A Pincer from two opposite edges, B Crossfire sweeping across in parallel lanes, C Stream in single file from one edge, and D Ring closing in around you. A new one is introduced every two zones. With Structured composition they repeat in a phrase you can learn, and now and then the pattern breaks.</li>
+          <li><b>Motifs.</b> Enemies arrive in four patterns: A Pincer from two opposite edges, B Crossfire sweeping across in parallel lanes, C Stream in single file from one edge, and D Ring closing in around you. A new one appears every two zones. With Structured order they repeat in a phrase you can learn, which now and then breaks.</li>
           <li><b>Controls.</b> Press <b>Play yourself</b>, then use <kbd>WASD</kbd> or the arrow keys to move and <kbd>Space</kbd> to dash, or hold a finger where you want to go. The bot plays by exactly these rules.</li>
         </ul>
       </details>
@@ -252,7 +252,7 @@ button:disabled { opacity: .45; cursor: default; }
         <label for="rate-range" class="label">Your tension</label>
         <input type="range" id="rate-range" min="0" max="100" step="5" value="0">
         <span class="num" id="rate-val">0.00</span>
-        <p class="keys">Raise it when it feels tense and lower it when it calms down: scroll over the arena, press <kbd>E</kbd> or <kbd>Q</kbd>, or drag the slider. While watching the bot, <kbd>&uarr;</kbd> and <kbd>&darr;</kbd> work too. Only the ups and downs count, not the exact level.</p>
+        <p class="keys">Raise it when things feel tense, lower it when they calm down. Scroll over the game, press <kbd>E</kbd> or <kbd>Q</kbd>, or drag the slider (<kbd>&uarr;</kbd> and <kbd>&darr;</kbd> also work while watching). Only the ups and downs matter.</p>
       </div>
     </div>
 
@@ -266,7 +266,7 @@ button:disabled { opacity: .45; cursor: default; }
         <div class="meter big">
           <dt>Tension</dt><dd id="v-T">0.00</dd>
           <span class="bar"><i id="b-T" style="background: var(--tension)"></i></span>
-          <p class="def">Geometric mean of the three below, so it is zero whenever any of them is zero.</p>
+          <p class="def">Combines the three below. If any of them is zero, so is tension.</p>
         </div>
         <div class="meter">
           <dt>Stakes</dt><dd id="v-S">0.00</dd>
@@ -281,7 +281,7 @@ button:disabled { opacity: .45; cursor: default; }
         <div class="meter">
           <dt>Uncertainty</dt><dd id="v-U">0.00</dd>
           <span class="bar"><i id="b-U" style="background: var(--unc)"></i></span>
-          <p class="def"><span id="hits" class="num-slot">0</span> of 24 simulated futures <span id="u-event">get hit in the next 3 seconds</span>. Highest at 12 of 24.</p>
+          <p class="def"><span id="hits" class="num-slot">0</span> of 24 simulated futures <span id="u-event">get hit in the next 3 seconds</span>. Most uncertain at 12 of 24.</p>
         </div>
         <div class="meter">
           <dt>Progress</dt><dd id="v-P">0.00</dd>
@@ -291,7 +291,7 @@ button:disabled { opacity: .45; cursor: default; }
         <div class="meter">
           <dt>Pattern surprise</dt><dd id="v-X">0.00</dd>
           <span class="bar"><i id="b-X" style="background: var(--ink-2)"></i></span>
-          <p class="def" id="def-X">How unexpected the latest motifs were, judged by a model that learns the motif sequence as you play.</p>
+          <p class="def" id="def-X">How unexpected the latest motifs were to a model that learns their order as you play.</p>
           <p class="def live" id="voices-now">No motifs playing.</p>
         </div>
         <div class="meter" id="m-you" hidden>
@@ -349,7 +349,7 @@ button:disabled { opacity: .45; cursor: default; }
     <h3 id="you-hab-h" hidden>Does a motif get less tense as it becomes familiar?</h3>
     <p class="keys" id="you-hab-note" hidden></p>
     <div class="chart-box tablewrap" id="you-hab-box" hidden><table class="you-table" id="you-hab"></table></div>
-    <p class="keys">Correlation compares only the shape of your line with each curve, so your absolute level does not matter. The lead allows for your reaction time: a curve that moves a second before you still counts as matching. Rating while watching the bot measures a spectator's tension, the case Ely-style suspense was designed for. Rating while playing measures a player's.</p>
+    <p class="keys">Only the shape of your line counts, not its level. Each curve may run up to 3 seconds ahead of you, to allow for reaction time. Rating while you watch the bot gives a spectator&rsquo;s tension, which is what Ely-style suspense was designed for. Rating while you play gives a player&rsquo;s.</p>
     <div class="toolbar"><button id="btn-copy" class="solo" disabled>Copy results</button><span class="keys" id="copy-msg">Copies a summary and your rated samples as text, ready to paste into a chat.</span></div>
     <textarea id="copy-fallback" aria-label="Results text" hidden readonly></textarea>
   </section>
@@ -379,34 +379,34 @@ button:disabled { opacity: .45; cursor: default; }
       </div>
       <div data-game="zedrix" hidden>
         <h3><i style="background: var(--unc)"></i>Uncertainty</h3>
-        <p>Twice a second, the game copies the well and plays the next 8 pieces forward 24 times: the current piece and the two shown, then pieces from the same randomizer, placed by the bot's method with random variation. A future fails if the stack enters the danger zone or tops out. If <code>p</code> is the share of futures that stay clear, uncertainty is <code>H(p)</code>.</p>
+        <p>Twice a second, the game copies the well and plays out the next 8 pieces 24 times: the current piece, the two shown, then pieces from the same randomizer, placed the way the bot would with some randomness. A future fails if the stack reaches the danger zone. If <code>p</code> is the share of futures that stay clear, uncertainty is <code>H(p)</code>.</p>
       </div>
       <div data-game="arena">
         <h3><i style="background: var(--unc)"></i>Uncertainty</h3>
-        <p>About three times a second, the game copies its current state and plays it forward 24 times for 3 seconds, using the bot's movement with random variation. If <code>p</code> is the share of futures that avoid a hit, uncertainty is the binary entropy <code>H(p)</code>. It is 0 when every future agrees and 1 when they split evenly.</p>
+        <p>About three times a second, the game copies itself and plays 24 possible next-3-seconds, moving like the bot with some randomness. If <code>p</code> is the share of futures without a hit, uncertainty is the binary entropy <code>H(p)</code>: 0 when every future agrees, 1 when they split evenly.</p>
       </div>
       <div>
         <h3><i style="background: var(--tension)"></i>Tension</h3>
-        <p><code>T = (stakes &times; threat &times; uncertainty)^(1/3)</code>. It keeps the product's property that all three are needed, but stays on the same 0&ndash;1 scale as its parts. The marking follows <em>T</em>: <em>pp</em> under 0.15, then <em>p</em>, <em>mp</em>, <em>mf</em>, <em>f</em>, and <em>ff</em> above 0.75.</p>
+        <p><code>T = (stakes &times; threat &times; uncertainty)^(1/3)</code>. All three are needed, and the result stays on the same 0&ndash;1 scale as its parts. The marking follows <em>T</em>: <em>pp</em> under 0.15, then <em>p</em>, <em>mp</em>, <em>mf</em>, <em>f</em>, and <em>ff</em> above 0.75.</p>
       </div>
       <div>
         <h3><i style="background: var(--ink-2)"></i>Suspension and resolution</h3>
-        <p>A suspension starts when progress has stalled for 2 seconds while threat rose by 0.15 or more and tension is above 0.35. It resolves when progress moves on, breaks on a hit, or fades if tension drops away. The tension cycle is the strongest repeat period in the tension curve, found by autocorrelation.</p>
+        <p>A suspension starts when progress stalls for 2 seconds while threat climbs and tension is above 0.35. It resolves when progress moves on, breaks on a hit, or fades if tension drops. The tension cycle is the strongest repeating period in the tension curve, found by autocorrelation.</p>
       </div>
       <div data-game="zedrix" hidden>
         <h3><i style="background: var(--ink-2)"></i>Pieces as motifs</h3>
-        <p>Each piece is a note in the motifs lane: D Duo, B Bar, H Hook, Z Zed, C Cross. With <b>Structured</b> order, pieces come in shuffled sets of five, so the last piece of a set is fully predictable, and after two sets a set occasionally breaks (marked !). With <b>Random</b> order, pieces are independent. Pattern surprise uses the same learning model as the arena. The bot places each piece with a standard heuristic (aggregate height, lines, holes and unevenness, after Yiyuan Lee&rsquo;s weights) and moves it one step at a time. The motifs-at-once measure becomes <b>open wells</b>: columns at least 3 lower than both neighbours, each a plan the player is keeping open.</p>
+        <p>Each piece is a note in the motifs lane. With <b>Structured</b> order, the last piece of each set of five is fully predictable, and a broken set is marked !. With <b>Random</b> order, nothing is. Pattern surprise uses the same learning model as the arena. The bot scores every possible placement on height, cleared rows, holes and unevenness (after Yiyuan Lee&rsquo;s weights), then moves the piece one step at a time. Instead of motifs playing at once, Zedrix counts <b>open wells</b>: columns at least 3 lower than both neighbours, each one a plan the player is keeping open.</p>
       </div>
       <div data-game="arena">
         <h3><i style="background: var(--ink-2)"></i>Motifs and pattern surprise</h3>
-        <p>Enemies arrive as four motifs: A Pincer, B Crossfire, C Stream and D Ring. A new motif is introduced every two zones, and a motif heard three or more times may return varied (A&prime;). With <b>Structured</b> composition, motifs follow a repeating phrase form that grows as motifs are unlocked: AAAA, then AABA (song form), ABAC, and ABACABAD (rondo). Slots are evenly spaced, the last slot of each phrase layers two motifs like a cadence, and once a form has been heard twice, each slot has a 12% chance of being swapped for an unexpected motif, marked ! on the score. <b>Random</b> composition picks motifs freely. Pattern surprise comes from a model that remembers the last three motifs, learns as you play, and scores <code>&minus;log&#8322; P(motif | recent motifs)</code>, added to a trace that fades over 2.5 seconds.</p>
+        <p>A new motif appears every two zones, and one heard three or more times may come back varied (A&prime;). With <b>Structured</b> order, motifs follow a repeating phrase that grows as motifs arrive: AAAA, then AABA (song form), ABAC and ABACABAD (rondo). Each phrase ends with two motifs at once, like a cadence. Once a phrase has been heard twice, each slot has a 12% chance of a surprise swap, marked !. <b>Random</b> order picks motifs freely. Pattern surprise comes from a model that remembers the last three motifs and learns as you play. It scores <code>&minus;log&#8322; P(motif | recent motifs)</code>, and the trace fades over 2.5 seconds.</p>
       </div>
     </div>
-    <p class="caveat">These are first-guess weights, not validated ones. The simulated futures assume the player moves like the bot, so in play mode uncertainty measures how open the situation is for a typical player, not for you. Try the same session with checkpoints and then with permadeath: the threat curve stays similar, but stakes, and so tension, change shape.</p>
+    <p class="caveat">The weights are first guesses and have not been checked against how people feel. The simulated futures assume a player who moves like the bot, so when you play, uncertainty describes a typical player, not you. To see what stakes do, run the same game with checkpoints and then with permadeath: threat looks similar, but tension changes shape.</p>
   </section>
 
   <section aria-labelledby="refs-h">
-    <div class="sec-head"><h2 id="refs-h">References</h2><p>The works these measures come from. The analysis page has the full list.</p></div>
+    <div class="sec-head"><h2 id="refs-h">References</h2><p>The works these measures come from. The <a href="https://claude.ai/artifact/UbGLFkAFw8cgxGhL3ueAQE">analysis page</a> has the full list.</p></div>
     <ol class="refs">
       <li>Ely, J., Frankel, A., &amp; Kamenica, E. (2015). Suspense and surprise. <i>Journal of Political Economy</i>.<span class="use">Suspense as stakes times the spread of the next update to the odds; the measure tension turned out to match.</span></li>
       <li>Booth, M. (2009). <i>The AI Systems of Left 4 Dead</i>. Keynote, AIIDE 2009.<span class="use">The Left 4 Dead-style intensity in the rating comparison.</span></li>
@@ -1818,7 +1818,7 @@ const ArenaGame = {
   defs: {
     threat: "Missing hearts, plus how close the enemies are.", uEvent: "get hit in the next 3 seconds",
     progress: "Zone number plus sparks collected. The bar is progress through this zone.", loseUnit: "zones",
-    surprise: "How unexpected the latest motifs were, judged by a model that learns the motif sequence as you play.",
+    surprise: "How unexpected the latest motifs were to a model that learns their order as you play.",
     scoreNote: "The last 60 seconds. Staff lines are zones, bar lines are gates, and a double bar marks a safe point.",
     furthest: "Furthest zone", legendMotifs: "Motif voices A\u2013D: tick height is surprise, \u2032 marks a variation, ! a broken pattern",
     canvasLabel: "Game arena. In play mode, move with WASD or the arrow keys and dash with Space."
@@ -1843,7 +1843,7 @@ const ZedrixGame = {
   defs: {
     threat: "How high the stack is, plus covered holes and unevenness.", uEvent: "reach the danger zone within the next 8 pieces",
     progress: "Level number plus rows cleared. The bar is progress through this level.", loseUnit: "levels",
-    surprise: "How unexpected the latest pieces were, judged by a model that learns the piece order as you play.",
+    surprise: "How unexpected the latest pieces were to a model that learns their order as you play.",
     scoreNote: "The last 60 seconds. Staff lines are levels, bar lines are level-ups, faint lines are rising rows (the meter), and a double bar marks a safe point.",
     furthest: "Furthest level", legendMotifs: "Piece voices D B H Z C: tick height is surprise, ! a broken set",
     canvasLabel: "Zedrix well. In play mode, move with the arrow keys, rotate with Up and hard drop with Space."

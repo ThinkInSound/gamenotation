@@ -1,6 +1,6 @@
 # GameNotation
 
-An experiment in writing down play the way music is written down: a **score** of a game as it is played, with progress as the melody, tension as the dynamics, and recurring encounter patterns as voices.
+**A graphical notation for tension in games.** It writes down play the way music is written down: a **score** of a game as it is played, with progress as the melody, tension as the dynamics, and recurring patterns as voices.
 
 It has two parts:
 
@@ -13,13 +13,15 @@ Both are single HTML files with no dependencies beyond Google Fonts.
 
 ## Open it
 
-Build standalone copies and open them by double-clicking:
+The `docs/` folder holds the website version: `docs/index.html` is the games and `docs/analysis.html` the analysis. GitHub Pages serves it from there, and you can also open either file directly.
+
+To rebuild the website and the local copies after changing a page:
 
 ```
 node tools/build-local.js
 ```
 
-This writes `local/tension-score.html` and `local/tension-score-analysis.html`. (The files at the repository root leave out `<!doctype>`, `<head>` and `<body>`, because they are published as artifacts that add those.)
+This writes `docs/` (committed, for GitHub Pages) and `local/` (ignored, for double-clicking). The files at the repository root leave out `<!doctype>`, `<head>` and `<body>`, because they are published as artifacts that add those. Both pages are kept as plain ASCII so they display correctly however they are opened; `node tools/ascii-safe.js <file>` escapes any special characters.
 
 ## What the game measures
 
@@ -85,7 +87,9 @@ analysis/template.html        analysis page source; data is inlined at build tim
 data/arena-analysis.json      output of the headless sessions
 tools/arena-analysis.js       runs seeded headless sessions and computes the analysis
 tools/build-analysis.js       builds the analysis page
-tools/build-local.js          writes standalone copies to local/
+tools/build-local.js          writes the website (docs/) and standalone copies (local/)
+tools/ascii-safe.js           escapes special characters so pages display correctly anywhere
+docs/                         the GitHub Pages site (generated)
 ```
 
 ## Design rule
